@@ -1,0 +1,74 @@
+/**
+ * @brief アプリケーションのルート要素のスタイル定義
+ * 最大幅、中央揃え、パディング、テキストアラインメントを設定します。
+ */
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+/**
+ * @brief ロゴのスタイル定義
+ * 高さ、パディング、フィルター効果、ホバー時のトランジションを設定します。
+ */
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+
+/**
+ * @brief ロゴホバー時のフィルター効果
+ */
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+
+/**
+ * @brief Reactロゴホバー時のフィルター効果
+ */
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+/**
+ * @brief ロゴのスピンアニメーション定義
+ * 0度から360度への回転アニメーションを設定します。
+ */
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/**
+ * @brief アニメーションの適用条件
+ * 動きの量を減らす設定がされている場合はアニメーションを無効にします。
+ */
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+/**
+ * @brief カードコンポーネントのスタイル定義
+ * パディングを設定します。
+ */
+.card {
+  padding: 2em;
+}
+
+/**
+ * @brief 「Read the docs」リンクのスタイル定義
+ * 文字色を設定します。
+ */
+.read-the-docs {
+  color: #888;
+}
