@@ -1,5 +1,4 @@
 import { addTodo, deleteTodo, getTodos, incrementPomodorosCompleted, reorderTodos, toggleTodoCompleted, updateTodo } from '../src/stores/todoStore';
-import type { Todo } from '../src/types/todo';
 
 // Mock localStorage
 const localStorageMock = (() => {

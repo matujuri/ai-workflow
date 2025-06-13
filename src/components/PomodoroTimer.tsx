@@ -20,16 +20,15 @@ interface PomodoroTimerProps {
     isWorking: boolean;
     startTimer: () => void;
     pauseTimer: () => void;
-    resetTimer: () => void;
     toggleMode: () => void;
-    onResetClick: () => void;
+    onResetClick: () => void; // Add this new prop
 }
 
 /**
  * @brief ポモドーロタイマーのUIを表示するコンポーネント
  * @param props - PomodoroTimerPropsで定義されたプロパティ
  */
-const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ time, isRunning, isWorking, startTimer, pauseTimer, resetTimer, toggleMode, onResetClick }) => {
+const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ time, isRunning, isWorking, startTimer, pauseTimer, /* resetTimer, */ toggleMode, onResetClick }) => {
     // const { time, isRunning, isWorking, startTimer, pauseTimer, resetTimer, toggleMode } = usePomodoroTimer(); // 削除
 
     return (

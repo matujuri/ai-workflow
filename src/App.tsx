@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import TodoList from './components/TodoList';
 import TodoForm from './components/TodoForm';
 import PomodoroTimer from './components/PomodoroTimer';
@@ -19,7 +19,7 @@ function App() {
   const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
 
   // カスタムフックからポモドーロタイマーの状態と操作関数を取得
-  const { time, isRunning, isWorking, startTimer, pauseTimer, resetTimer, toggleMode, WORK_TIME, BREAK_TIME } = usePomodoroTimer();
+  const { time, isRunning, isWorking, startTimer, pauseTimer, resetTimer, toggleMode, WORK_TIME /* BREAK_TIME */ } = usePomodoroTimer();
 
   /**
    * @brief コンポーネントのマウント時にTODOをLocal Storageから読み込む副作用
