@@ -197,7 +197,6 @@ function App() {
             isWorking={isWorking}
             startTimer={startTimer}
             pauseTimer={pauseTimer}
-            resetTimer={resetTimer}
             toggleMode={toggleMode}
             onResetClick={handleResetPomodoro}
           />
