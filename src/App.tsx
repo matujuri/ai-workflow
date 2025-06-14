@@ -115,16 +115,6 @@ function App() {
   };
 
   /**
-   * @brief ポモドーロタイマーをリセットし、アクティブなTODOの指定を解除するハンドラ
-   * @param なし
-   * @returns なし
-   */
-  const handleResetPomodoro = () => {
-    resetTimer();
-    setActiveTodoId(null);
-  };
-
-  /**
    * @brief TODOをアクティブなポモドーロの対象に設定し、タイマーを制御するハンドラ
    * @param id - アクティブにするTODOのID
    * @returns なし
