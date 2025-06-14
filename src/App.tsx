@@ -21,7 +21,7 @@ function App() {
   const [showTodoForm, setShowTodoForm] = useState(false);
 
   // カスタムフックからポモドーロタイマーの状態と操作関数を取得
-  const { time, isRunning, isWorking, startTimer, pauseTimer, resetTimer, WORK_TIME, BREAK_TIME, isBreakTimerActive, breakTimeRemaining, isWorkTimeCompleted, startBreak } = usePomodoroTimer();
+  const { time, isRunning, isWorking, startTimer, pauseTimer, resetTimer, WORK_TIME, isBreakTimerActive, breakTimeRemaining, isWorkTimeCompleted, startBreak } = usePomodoroTimer();
 
   /**
    * @brief コンポーネントのマウント時にTODOをLocal Storageから読み込む副作用
@@ -239,6 +239,13 @@ function App() {
               onCancelEdit={handleCancelEdit}
             />
           )}
+          {/* ポモドーロタイマーのリセットボタンを追加 */}
+          <button
+            onClick={handleResetPomodoro}
+            className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
+          >
+            タイマーリセット
+          </button>
         </div>
       </div>
     </div>
