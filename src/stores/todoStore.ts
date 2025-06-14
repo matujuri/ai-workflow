@@ -46,7 +46,7 @@ export const getTodos = (): Todo[] => {
  * @param dueDate - TODOの期限日（オプション）
  * @returns Todo[] - 更新されたTODOアイテムの配列
  */
-export const addTodo = (text: string, priority: Todo['priority'], dueDate?: string): Todo[] => {
+export const addTodo = (text: string, priority: boolean, dueDate?: string): Todo[] => {
     const todos = loadTodos();
     const newTodo: Todo = {
         id: Date.now().toString(), // ユニークIDを生成
@@ -56,7 +56,8 @@ export const addTodo = (text: string, priority: Todo['priority'], dueDate?: stri
         completed: false,
         pomodorosCompleted: 0,
     };
-    todos.push(newTodo);
+    // 新しいTODOをリストの先頭に追加
+    todos.unshift(newTodo);
     saveTodos(todos);
     return todos;
 };

@@ -7,11 +7,12 @@
  * @param dueDate - TODOの期日（オプション）
  * @param completed - TODOが完了しているかどうかのフラグ
  * @param pomodorosCompleted - このTODOで完了したポモドーロの回数
+ * @param timeSpent - このTODOに費やした時間（分単位）
  */
 export interface Todo {
     id: string;
     text: string;
-    priority: 'low' | 'medium' | 'high';
+    priority: boolean;
     dueDate?: string; // Optional due date
     completed: boolean;
     pomodorosCompleted: number;

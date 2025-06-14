@@ -10,8 +10,8 @@ import type { Todo } from '../types/todo';
  * @param onCancelEdit - 編集キャンセル時のコールバック関数
  */
 interface TodoFormProps {
-    onAddTodo: (text: string, priority: Todo['priority'], dueDate?: string) => void;
-    onEditTodo: (id: string, text: string, priority: Todo['priority'], dueDate?: string) => void;
+    onAddTodo: (text: string, priority: boolean, dueDate?: string) => void;
+    onEditTodo: (id: string, text: string, priority: boolean, dueDate?: string) => void;
     editingTodo?: Todo | null; // 編集中のTODOを受け取る
     onCancelEdit: () => void; // 編集キャンセル時のコールバック
 }
@@ -24,7 +24,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
     // 入力テキストの状態
     const [inputText, setInputText] = useState('');
     // 優先度の状態
-    const [priority, setPriority] = useState<Todo['priority']>('medium');
+    const [priority, setPriority] = useState<boolean>(false); // デフォルトをfalseに変更
     // 期日の状態
     const [dueDate, setDueDate] = useState<string>('');
 
@@ -39,7 +39,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
             setDueDate(editingTodo.dueDate || '');
         } else {
             setInputText('');
-            setPriority('medium');
+            setPriority(false); // リセット時もfalse
             setDueDate('');
         }
     }, [editingTodo]); // editingTodoが変更されたときに実行
@@ -62,7 +62,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
             }
             // フォームをリセット
             setInputText('');
-            setPriority('medium');
+            setPriority(false); // フォームリセット時もfalse
             setDueDate('');
             onCancelEdit(); // フォーム送信後に編集状態をクリア
         }
@@ -76,7 +76,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
      */
     const handleCancel = () => {
         setInputText('');
-        setPriority('medium');
+        setPriority(false); // キャンセル時もfalse
         setDueDate('');
         onCancelEdit(); // 編集状態をクリア
     };
@@ -97,13 +97,12 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
                 <label htmlFor="priority-select" className="mr-2 text-sm font-medium text-gray-700">優先度:</label>
                 <select
                     id="priority-select"
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value as Todo['priority'])}
+                    value={priority.toString()} // boolean値を文字列に変換してvalueに設定
+                    onChange={(e) => setPriority(e.target.value === 'true')} // 文字列からbooleanに変換
                     className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                    <option value="low">低</option>
-                    <option value="medium">中</option>
-                    <option value="high">高</option>
+                    <option value="true">優先</option>
+                    <option value="false">しない</option>
                 </select>
                 {/* 期日入力フィールド */}
                 <label htmlFor="due-date-input" className="ml-4 mr-2 text-sm font-medium text-gray-700">期日:</label>

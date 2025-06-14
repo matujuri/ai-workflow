@@ -3,67 +3,55 @@
 ## 1. システムアーキテクチャ
 
 ```mermaid
-C4Context
-    title System Context for TODO Management Web App
-    Enterprise_Boundary(b_enterprise, "TODO Management System") {
-        Person(user, "User", "Individual managing TODOs and using pomodoro timer")
-        System(spa, "React SPA", "Single Page Application running in web browser")
-        System_Ext(localStorage, "Local Storage", "Web browser's data storage")
+graph LR
+    SubGraph "クライアントサイドアプリケーション (React + TypeScript)"
+        A[App.tsx (メインコンポーネント)] --> B(components/);
+        A --> C(stores/);
+        A --> D(hooks/);
+        A --> E(types/);
+        A --> F(utils/);
+    end
 
-        Rel(user, spa, "Uses")
-        Rel(spa, localStorage, "Reads and writes TODO data")
-    }
+    B --> B1(TodoForm.tsx);
+    B --> B2(TodoList.tsx);
+    B --> B3(TodoItem.tsx);
+
+    C --> C1(todoStore.ts);
+
+    D --> D1(usePomodoroTimer.ts);
+
+    E --> E1(todo.ts);
+
+    F --> F1(timer.ts);
+
+    G[LocalStorage] <--> C1;
+    A <--> G;
 ```
+
+### 説明
+本アプリケーションは単一のクライアントサイドSPA（Single Page Application）として構築されます。サーバーサイドの機能は持ちません。すべてのデータはブラウザのLocalStorageに保存されます。
 
 ## 2. コンポーネント構成
 
-```mermaid
-C4Container
-    title Container Diagram for React SPA
-
-    Container(react_app, "React Application", "Web App")
-
-    Boundary(react_app_boundary, "React Application Components") {
-        Component(app_component, "App", "React Component", "Overall layout and routing")
-        Component(todo_list_component, "TodoList", "React Component", "Displays and reorders TODO items")
-        Component(todo_item_component, "TodoItem", "React Component", "Individual TODO item, triggers pomodoro")
-        Component(todo_form_component, "TodoForm", "React Component", "Form for adding/editing TODOs")
-        Component(pomodoro_timer_component, "PomodoroTimer", "React Component", "Pomodoro timer display and controls")
-
-        Component(todo_store, "TodoStore", "TypeScript Module", "Manages TODO data and local storage")
-        Component(use_pomodoro_timer_hook, "usePomodoroTimer Hook", "TypeScript Hook", "Pomodoro timer logic")
-        Component(timer_module, "Timer Module", "TypeScript Module", "Helper functions for timer calculations and notifications")
-    }
-
-    System_Ext(localStorage_ext, "Local Storage", "Web browser's data storage")
-
-    Rel(react_app, app_component, "Contains")
-    Rel(react_app, todo_list_component, "Contains")
-    Rel(react_app, todo_form_component, "Contains")
-    Rel(react_app, pomodoro_timer_component, "Contains")
-    Rel(react_app, todo_store, "Contains")
-    Rel(react_app, use_pomodoro_timer_hook, "Contains")
-    Rel(react_app, timer_module, "Contains")
-
-    Rel(todo_list_component, todo_item_component, "Renders")
-
-    Rel(todo_list_component, todo_store, "Fetches/Updates data")
-    Rel(todo_form_component, todo_store, "Adds/Edits data")
-    Rel(todo_item_component, todo_store, "Updates/Deletes data")
-
-    Rel(todo_item_component, use_pomodoro_timer_hook, "Triggers timer actions")
-    Rel(pomodoro_timer_component, use_pomodoro_timer_hook, "Uses timer logic")
-    Rel(use_pomodoro_timer_hook, timer_module, "Uses helper functions")
-
-    Rel(todo_store, localStorage_ext, "Reads/Writes data")
-```
+- **`App.tsx`**: アプリケーションのルートコンポーネント。グローバルな状態管理（Recoil経由）、ルートのルーティング（もしあれば）、主要なUI要素（ヘッダー、TODOリスト、タイマー表示）のレンダリングを調整します。
+- **`components/`**: 再利用可能なUIコンポーネントを格納します。
+    - `TodoForm.tsx`: TODOの追加フォーム。新しいTODOのタイトル、優先度、期日を入力するUIを提供します。
+    - `TodoList.tsx`: 複数の`TodoItem`コンポーネントをレンダリングするリストコンポーネント。TODOアイテムの並べ替えやフィルタリングロジックを持つ場合があります。
+    - `TodoItem.tsx`: 個々のTODOアイテムの表示と操作（完了/未完了、優先度表示、期日表示、消費時間表示、削除）を処理します。
+- **`stores/`**: Recoilの状態管理関連ファイルを格納します。
+    - `todoStore.ts`: TODOアイテムのグローバルな状態を管理するRecoilアトムとセレクターを定義します。Local Storageとのデータの読み書きも担当します。
+- **`hooks/`**: カスタムReactフックを格納します。
+    - `usePomodoroTimer.ts`: ポモドーロタイマーのロジック（タイマーの開始/停止、時間管理、通知トリガー）をカプセル化したカスタムフック。UIとは分離され、バックグラウンドで動作します。
+- **`types/`**: TypeScriptの型定義ファイルを格納します。
+    - `todo.ts`: `Todo`オブジェクトのインターフェースや関連する型定義を定義します。
+- **`utils/`**: ユーティリティ関数やヘルパー関数を格納します。
+    - `timer.ts`: タイマーのフォーマットやその他の時間関連のヘルパー関数を提供します。
 
 ## 3. 依存関係
 
-- **Frontend Framework**: React
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **State Management**: React Context API / useState
-- **Data Persistence**: Local Storage (browser feature)
-- **Custom Hooks**: usePomodoroTimer (reusable timer logic)
-- **Utility Functions**: Helper functions for timer calculations and notifications (src/utils/timer.ts)
+- **`App.tsx`**: `components/`以下の各コンポーネント、`stores/todoStore.ts`、`hooks/usePomodoroTimer.ts`に依存します。
+- **`TodoForm.tsx`**: `App.tsx`から渡されるTODO追加関数に依存します。
+- **`TodoList.tsx`**: `stores/todoStore.ts`からTODOリストの状態を読み込み、`TodoItem.tsx`をレンダリングします。
+- **`TodoItem.tsx`**: `stores/todoStore.ts`からTODOの更新や削除のアクションに依存します。また、`types/todo.ts`の型定義に依存します。
+- **`todoStore.ts`**: LocalStorage APIに依存し、データの永続化を行います。`types/todo.ts`に依存します。
+- **`usePomodoroTimer.ts`**: `utils/timer.ts`に依存し、時間関連のユーティリティ関数を利用します。
