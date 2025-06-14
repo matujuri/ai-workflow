@@ -239,13 +239,6 @@ function App() {
               onCancelEdit={handleCancelEdit}
             />
           )}
-          {/* ポモドーロタイマーのリセットボタンを追加 */}
-          <button
-            onClick={handleResetPomodoro}
-            className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
-          >
-            タイマーリセット
-          </button>
         </div>
       </div>
     </div>
