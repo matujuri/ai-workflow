@@ -17,6 +17,7 @@ import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
  * @param time - ポモドーロタイマーの残り時間
  * @param WORK_TIME - ポモドーロ作業時間の総時間
  * @param isWorking - 現在が作業時間中かどうかを示すフラグ
+ * @param onProgressCircleClick - 進捗円のクリックハンドラ
  */
 interface TodoItemProps {
     todo: Todo;
@@ -30,13 +31,14 @@ interface TodoItemProps {
     time: number;
     WORK_TIME: number;
     isWorking: boolean;
+    onProgressCircleClick: (id: string) => void;
 }
 
 /**
  * @brief 個々のTODOアイテムを表示し、操作（完了、削除、編集、ポモドーロ開始）を可能にするコンポーネント
  * @param props - TodoItemPropsで定義されたプロパティ
  */
-const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, attributes, listeners, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking }) => {
+const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, attributes, listeners, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick }) => {
     // 現在表示中のTODOがアクティブなポモドーロの対象であるか
     const isCurrentActiveTodo = activeTodoId === todo.id;
     // 現在のポモドーロの進捗状況を計算（0-100%）
@@ -129,7 +131,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                 {isCurrentActiveTodo && isWorking ? (
                     <div
                         className="relative w-6 h-6 rounded-full bg-blue-200 cursor-pointer flex items-center justify-center mr-1"
-                        onClick={handleToggleActive}
+                        onClick={() => onProgressCircleClick(todo.id)}
                     >
                         {/* 進捗を示す青い円 */}
                         <div

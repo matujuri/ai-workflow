@@ -17,6 +17,7 @@ import TodoItem from './TodoItem';
  * @param time - ポモドーロタイマーの残り時間
  * @param WORK_TIME - ポモドーロ作業時間の総時間
  * @param isWorking - 現在が作業時間中かどうかを示すフラグ
+ * @param onProgressCircleClick - TODOの進捗円をクリックしたときに呼び出されるコールバック関数
  */
 interface SortableTodoItemProps {
     todo: Todo;
@@ -28,6 +29,7 @@ interface SortableTodoItemProps {
     time: number;
     WORK_TIME: number;
     isWorking: boolean;
+    onProgressCircleClick: (id: string) => void;
 }
 
 /**
@@ -35,7 +37,7 @@ interface SortableTodoItemProps {
  * useSortableフックを使用してDND機能を提供し、内部でTodoItemを表示します。
  * @param props - SortableTodoItemPropsで定義されたプロパティ
  */
-const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking }) => {
+const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick }) => {
     // DND-kitのuseSortableフックから必要な属性とリスナーを取得
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: todo.id });
 
@@ -60,6 +62,7 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
                 time={time}
                 WORK_TIME={WORK_TIME}
                 isWorking={isWorking}
+                onProgressCircleClick={onProgressCircleClick}
             />
         </div>
     );
@@ -78,6 +81,7 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
  * @param time - ポモドーロタイマーの残り時間
  * @param WORK_TIME - ポモドーロ作業時間の総時間
  * @param isWorking - 現在が作業時間中かどうかを示すフラグ
+ * @param onProgressCircleClick - TODOの進捗円をクリックしたときに呼び出されるコールバック関数
  */
 interface TodoListProps {
     todos: Todo[];
@@ -90,6 +94,7 @@ interface TodoListProps {
     time: number;
     WORK_TIME: number;
     isWorking: boolean;
+    onProgressCircleClick: (id: string) => void;
 }
 
 /**
@@ -97,7 +102,7 @@ interface TodoListProps {
  * DndContextとSortableContextを提供し、SortableTodoItemをレンダリングします。
  * @param props - TodoListPropsで定義されたプロパティ
  */
-const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking }) => {
+const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick }) => {
     // Dnd-kitのセンサーを設定（ポインターとキーボード操作に対応）
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -139,6 +144,7 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete,
                             time={time}
                             WORK_TIME={WORK_TIME}
                             isWorking={isWorking}
+                            onProgressCircleClick={onProgressCircleClick}
                         />
                     ))}
                 </div>

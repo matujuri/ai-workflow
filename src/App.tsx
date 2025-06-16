@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import TodoList from './components/TodoList';
 import TodoForm from './components/TodoForm';
-import PomodoroTimer from './components/PomodoroTimer';
 import { addTodo, getTodos, toggleTodoCompleted, deleteTodo, updateTodo, reorderTodos, incrementPomodorosCompleted } from './stores/todoStore';
 import type { Todo } from './types/todo';
 import usePomodoroTimer from './hooks/usePomodoroTimer';
@@ -105,65 +104,43 @@ function App() {
   };
 
   /**
-   * @brief ポモドーロタイマーをリセットし、アクティブなTODOの指定を解除するハンドラ
-   * @param なし
-   * @returns なし
-   */
-  const handleResetPomodoro = () => {
-    resetTimer();
-    setActiveTodoId(null);
-  };
-
-  /**
    * @brief TODOをアクティブなポモドーロの対象に設定し、タイマーを制御するハンドラ
    * @param id - アクティブにするTODOのID
    * @returns なし
    */
-  const handleSetAsActiveTodo = (id: string) => {
-    const clickedTodo = todos.find(todo => todo.id === id);
-    // 完了済みのTODOがクリックされた場合はタイマーを起動しない
-    if (clickedTodo && clickedTodo.completed) {
-      console.log("Completed todo clicked, not starting timer.");
+  const handleTodoItemClick = (id: string) => {
+
+    // アクティブなTODOが既に存在する場合、何もしない
+    if (activeTodoId !== null) {
+      console.log("すでにアクティブなTODOがあるため、クリックを無視します。");
       return;
     }
 
-    // クリックされたTODOが現在アクティブなTODOの場合
-    if (activeTodoId === id) {
-      // タイマーが0の場合（作業時間または休憩時間が終了した場合）
-      if (time === 0) {
-        // 現在が作業時間の場合（作業時間が終了したばかり）
-        if (isWorking) {
-          // ポモドーロ完了回数を増やし、休憩モードに切り替えて休憩タイマーを開始
-          setTodos(incrementPomodorosCompleted(id)); // pomodorosCompletedをインクリメントし、localStorageに保存
-          toggleMode(); // 休憩モードに切り替え
-          startTimer(); // 休憩タイマーを開始
-        } else {
-          // 現在が休憩時間の場合（休憩時間が終了したばかり）
-          // 作業モードに切り替える（タイマーは自動開始しない、ユーザーのクリックで再開）
-          toggleMode();
-        }
-      } else {
-        // タイマーが実行中または一時停止中の場合、クリックで一時停止/再開を切り替える
-        if (isRunning) {
-          pauseTimer(); // 一時停止
-        } else {
-          startTimer(); // 再開
-        }
-      }
+    // アクティブなTODOがない場合のみ、クリックされたTODOを作業タイマーの対象として開始
+    setActiveTodoId(id); // 新しいTODOをアクティブに設定
+    resetTimer(); // タイマーを作業時間にリセットし、作業モードに設定
+    startTimer(); // 新しいアクティブTODOの作業タイマーを開始
+  };
+
+  /**
+   * @brief 完了した作業タイマーの進捗円クリックで休憩タイマーを開始するハンドラ
+   * @param id - 進捗円がクリックされたTODOのID
+   * @returns なし
+   */
+  const handleProgressCircleClick = (id: string) => {
+    // アクティブなTODOの作業タイマーが完了しており、かつまだ実行中でない場合のみ休憩タイマーを開始
+    if (activeTodoId === id && time === 0 && !isRunning && isWorking) {
+      setTodos(incrementPomodorosCompleted(id)); // ポモドーロ完了回数を増やす
+      setActiveTodoId(null); // 休憩タイマーはTODOと紐づかないため、アクティブTODOを解除
+      toggleMode(); // 休憩モードに切り替え (usePomodoroTimerで時間がBREAK_TIMEになる)
+      startTimer(); // 休憩タイマーを開始
     } else {
-      // クリックされたTODOが現在アクティブでない場合（別のTODOがクリックされたか、アクティブなTODOがない場合）
-      // 以前アクティブなTODOがあり、タイマーが実行中であれば一時停止
-      if (activeTodoId !== null && isRunning) {
-        pauseTimer();
-      }
-      setActiveTodoId(id); // 新しいTODOをアクティブに設定
-      resetTimer(); // タイマーを作業時間にリセットし、作業モードに設定
-      startTimer(); // 新しいアクティブTODOの作業タイマーを開始
+      console.log("Progress circle click ignored. Conditions not met for starting break timer.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
       <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0 w-full max-w-4xl">
         {/* TODOリストセクション */}
         <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg">
@@ -183,22 +160,11 @@ function App() {
             onStartEdit={handleStartEdit}
             onSort={handleSort}
             activeTodoId={activeTodoId}
-            onSetAsActiveTodo={handleSetAsActiveTodo}
+            onSetAsActiveTodo={handleTodoItemClick}
+            onProgressCircleClick={handleProgressCircleClick}
             time={time}
             WORK_TIME={WORK_TIME}
             isWorking={isWorking}
-          />
-        </div>
-        {/* ポモドーロタイマーセクション */}
-        <div className="w-full md:w-1/2 flex items-center justify-center">
-          <PomodoroTimer
-            time={time}
-            isRunning={isRunning}
-            isWorking={isWorking}
-            startTimer={startTimer}
-            pauseTimer={pauseTimer}
-            toggleMode={toggleMode}
-            onResetClick={handleResetPomodoro}
           />
         </div>
       </div>
