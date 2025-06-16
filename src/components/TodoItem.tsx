@@ -1,8 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import type { Todo } from '../types/todo';
-import type { DraggableAttributes } from '@dnd-kit/core';
-import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
-import TodoForm from './TodoForm';
+import TodoEditForm from './TodoEditForm';
 
 /**
  * @interface TodoItemProps
@@ -28,8 +26,6 @@ interface TodoItemProps {
     onToggleCompleted: (id: string) => void;
     onDelete: (id: string) => void;
     onStartEdit: (todo: Todo) => void;
-    attributes: DraggableAttributes;
-    listeners: SyntheticListenerMap | undefined;
     activeTodoId: string | null;
     onSetAsActiveTodo: (id: string) => void;
     time: number;
@@ -45,7 +41,7 @@ interface TodoItemProps {
  * @brief 個々のTODOアイテムを表示し、操作（完了、削除、編集、ポモドーロ開始）を可能にするコンポーネント
  * @param props - TodoItemPropsで定義されたプロパティ
  */
-const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, attributes, listeners, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, editingTodo, onEditTodo, onCancelEdit }) => {
+const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, editingTodo, onEditTodo, onCancelEdit }) => {
     // 現在表示中のTODOがアクティブなポモドーロの対象であるか
     const isCurrentActiveTodo = activeTodoId === todo.id;
     // 現在のポモドーロの進捗状況を計算（0-100%）
@@ -146,7 +142,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
             <div className={`flex items-center justify-between p-2 my-1 border rounded shadow-sm ${todo.completed ? 'bg-gray-200' : 'bg-white'}`}>
                 <div className="flex items-center">
                     {/* ドラッグ＆ドロップのハンドル */}
-                    <span className="cursor-grab text-gray-400 mr-2" {...listeners} {...attributes}>::</span>
+                    <span className="cursor-grab text-gray-400 mr-2">::</span>
                     {/* TODOの完了チェックボックスまたは完了スターの表示 */}
                     {todo.completed ? (
                         <span
@@ -207,10 +203,9 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                     <button onClick={handleDelete} className="text-sm text-red-500 hover:underline" aria-label="Delete todo">Delete</button>
                 </div>
             </div>
-            {/* 編集中のTODOであれば、その直下にTodoFormを表示 */}
+            {/* 編集中のTODOであれば、その直下にTodoEditFormを表示 */}
             {isEditingCurrentTodo && (
-                <TodoForm
-                    onAddTodo={() => { }} // 使われないが、型のため空関数を渡す
+                <TodoEditForm
                     onEditTodo={onEditTodo}
                     editingTodo={editingTodo}
                     onCancelEdit={onCancelEdit}

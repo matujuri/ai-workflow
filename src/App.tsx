@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import TodoList from './components/TodoList';
-import TodoForm from './components/TodoForm';
+import TodoAddForm from './components/TodoAddForm';
 import { addTodo, getTodos, toggleTodoCompleted, deleteTodo, updateTodo, reorderTodos, incrementPomodorosCompleted } from './stores/todoStore';
 import type { Todo } from './types/todo';
 import usePomodoroTimer from './hooks/usePomodoroTimer';
@@ -16,9 +16,6 @@ function App() {
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   // 現在アクティブな（ポモドーロタイマーの対象となっている）TODOのIDを管理するstate
   const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
-
-  // TODO追加フォームの表示状態を管理するstate
-  const [showAddTodoForm, setShowAddTodoForm] = useState(false);
 
   // アプリケーションヘッダーに表示する日付と曜日を管理するstate
   const [currentDate, setCurrentDate] = useState('');
@@ -48,9 +45,8 @@ function App() {
    * @param dueDate - TODOの期限日（オプション）
    * @returns なし
    */
-  const handleAddTodo = (text: string, isPriority: boolean, dueDate?: string) => {
-    setTodos(addTodo(text, isPriority, dueDate));
-    setShowAddTodoForm(false); // TODO追加後にフォームを非表示にする
+  const handleAddTodo = (text: string) => {
+    setTodos(addTodo(text, false, undefined));
   };
 
   /**
@@ -145,20 +141,8 @@ function App() {
     }
   };
 
-  /**
-   * @brief TODO追加フォームの表示/非表示を切り替えるハンドラ
-   * @param なし
-   * @returns なし
-   */
-  const handleToggleAddTodoForm = () => {
-    // 編集中でない場合にのみフォームの表示を切り替える
-    if (!editingTodo) {
-      setShowAddTodoForm(prev => !prev);
-    }
-  };
-
   return (
-    <div className="h-screen bg-gray-100 flex flex-col items-stretch py-4">
+    <div className="h-screen bg-gray-100 flex flex-col items-stretch py-4 relative pb-20">
 
       <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0 w-full flex-grow">
         <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg flex flex-col flex-grow">
@@ -179,22 +163,14 @@ function App() {
             time={time}
             WORK_TIME={WORK_TIME}
             isWorking={isWorking}
-            onClickEmptySpace={handleToggleAddTodoForm}
             onEditTodo={handleUpdateTodo}
             onCancelEdit={handleCancelEdit}
             editingTodo={editingTodo}
           />
-          {/* TODOフォーム - showAddTodoFormがtrueまたはeditingTodoが存在する場合に表示 */}
-          {showAddTodoForm && (
-            <TodoForm
-              onAddTodo={handleAddTodo}
-              onEditTodo={handleUpdateTodo}
-              editingTodo={editingTodo}
-              onCancelEdit={handleCancelEdit}
-            />
-          )}
         </div>
       </div>
+      {/* TODO追加フォーム - 常に表示 */}
+      {<TodoAddForm onAddTodo={handleAddTodo} />}
     </div>
   );
 }
