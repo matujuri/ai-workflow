@@ -134,9 +134,11 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                 </div>
                 <div className="flex items-center">
                     {/* 完了したポモドーロ数に応じた'×'マークの表示 */}
-                    {Array.from({ length: todo.pomodorosCompleted }).map((_, index) => (
-                        <span key={index} className="text-gray-500 text-xs font-bold mr-1">×</span>
-                    ))}
+                    {todo.pomodorosCompleted > 0 && (
+                        <span className="text-gray-500 text-xs font-bold mr-1">
+                            {todo.pomodorosCompleted === 1 ? 'x' : `${todo.pomodorosCompleted}x`}
+                        </span>
+                    )}
 
                     {/* 現在アクティブなTODOで、作業時間中であれば進捗円を表示 */}
                     {isCurrentActiveTodo && isWorking ? (
