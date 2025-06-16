@@ -9,8 +9,6 @@ import TodoEditForm from './TodoEditForm';
  * @param onToggleCompleted - TODOの完了状態を切り替えるコールバック関数
  * @param onDelete - TODOを削除するコールバック関数
  * @param onStartEdit - TODOの編集を開始するコールバック関数
- * @param attributes - ドラッグ＆ドロップのための属性
- * @param listeners - ドラッグ＆ドロップのためのイベントリスナー
  * @param activeTodoId - 現在アクティブなTODOのID
  * @param onSetAsActiveTodo - TODOをアクティブに設定するコールバック関数
  * @param time - ポモドーロタイマーの残り時間
@@ -20,6 +18,8 @@ import TodoEditForm from './TodoEditForm';
  * @param editingTodo - 編集中のTODO
  * @param onEditTodo - TODOを編集するコールバック関数
  * @param onCancelEdit - 編集をキャンセルするコールバック関数
+ * @param attributes - コンポーネントに適用する追加の属性
+ * @param listeners - コンポーネントに適用する追加のリスナー
  */
 interface TodoItemProps {
     todo: Todo;
@@ -35,13 +35,15 @@ interface TodoItemProps {
     editingTodo?: Todo | null;
     onEditTodo: (id: string, text: string, isPriority: boolean, dueDate?: string) => void;
     onCancelEdit: () => void;
+    attributes?: Record<string, any>;
+    listeners?: Record<string, any>;
 }
 
 /**
  * @brief 個々のTODOアイテムを表示し、操作（完了、削除、編集、ポモドーロ開始）を可能にするコンポーネント
  * @param props - TodoItemPropsで定義されたプロパティ
  */
-const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, editingTodo, onEditTodo, onCancelEdit }) => {
+const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, editingTodo, onEditTodo, onCancelEdit, attributes, listeners }) => {
     // 現在表示中のTODOがアクティブなポモドーロの対象であるか
     const isCurrentActiveTodo = activeTodoId === todo.id;
     // 現在のポモドーロの進捗状況を計算（0-100%）
@@ -138,16 +140,21 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
     };
 
     return (
-        <div className="relative flex flex-col">
+        <div
+            className="relative flex flex-col"
+            style={{ userSelect: 'none' }}
+            {...attributes}
+            {...listeners}
+        >
             <div className={`flex items-center justify-between p-2 my-1 border rounded shadow-sm ${todo.completed ? 'bg-gray-200' : 'bg-white'}`}>
                 <div className="flex items-center">
-                    {/* ドラッグ＆ドロップのハンドル */}
-                    <span className="cursor-grab text-gray-400 mr-2">::</span>
+                    {/* ドラッグ＆ドロップのハンドルは不要になるため削除 */}
+                    {/* <span className="cursor-grab text-gray-400 mr-2">::</span> */}
                     {/* TODOの完了チェックボックスまたは完了スターの表示 */}
                     {todo.completed ? (
                         <span
                             className="mr-2 text-xl cursor-pointer"
-                            onClick={handleToggle}
+                            onClick={(e) => { e.stopPropagation(); handleToggle(); }}
                             aria-label="Toggle todo completed"
                         >
                             ⭐️
@@ -156,13 +163,13 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                         <input
                             type="checkbox"
                             checked={todo.completed}
-                            onChange={handleToggle}
+                            onChange={(e) => { e.stopPropagation(); handleToggle(); }}
                             className="mr-2"
                             aria-label="Toggle todo completed"
                         />
                     )}
                     {/* TODOの内容（クリックでポモドーロ開始）*/}
-                    <div onClick={handleToggleActive} className="flex flex-col cursor-pointer flex-grow">
+                    <div onClick={(e) => { e.stopPropagation(); handleToggleActive(); }} className="flex flex-col cursor-pointer flex-grow">
                         {/* TODOテキスト（完了状態によってスタイル変更）*/}
                         <span className={`text-lg ${todo.completed ? 'font-bold text-gray-700' : 'text-gray-900'}`}>
                             {todo.isPriority && <span className="mr-1 text-red-500 font-bold">！</span>}
@@ -185,7 +192,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                     {isCurrentActiveTodo && isWorking ? (
                         <div
                             className="relative w-6 h-6 rounded-full bg-blue-200 cursor-pointer flex items-center justify-center mr-1"
-                            onClick={() => onProgressCircleClick(todo.id)}
+                            onClick={(e) => { e.stopPropagation(); onProgressCircleClick(todo.id); }}
                         >
                             {/* 進捗を示す青い円 */}
                             <div
@@ -198,9 +205,9 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                         null
                     )}
                     {/* 編集ボタン */}
-                    <button onClick={handleEditClick} className="text-sm text-blue-500 hover:underline mr-2" aria-label="Edit todo">Edit</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleEditClick(); }} className="text-sm text-blue-500 hover:underline mr-2" aria-label="Edit todo">Edit</button>
                     {/* 削除ボタン */}
-                    <button onClick={handleDelete} className="text-sm text-red-500 hover:underline" aria-label="Delete todo">Delete</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="text-sm text-red-500 hover:underline" aria-label="Delete todo">Delete</button>
                 </div>
             </div>
             {/* 編集中のTODOであれば、その直下にTodoEditFormを表示 */}

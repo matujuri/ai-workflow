@@ -1,5 +1,5 @@
 import React from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Todo } from '../types/todo';
@@ -45,7 +45,7 @@ interface SortableTodoItemProps {
  */
 const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, onEditTodo, onCancelEdit, editingTodo }) => {
     // DND-kitのuseSortableフックから必要な属性とリスナーを取得
-    const { setNodeRef, transform, transition } = useSortable({ id: todo.id });
+    const { setNodeRef, transform, transition, attributes, listeners } = useSortable({ id: todo.id });
 
     // ドラッグ中のスタイルを適用
     const style = {
@@ -54,7 +54,7 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
     };
 
     return (
-        <div ref={setNodeRef} style={style}>
+        <div style={{ ...style, touchAction: 'none' }} ref={setNodeRef}>
             {/* 基本的なTODOアイテムを表示 */}
             <TodoItem
                 todo={todo}
@@ -70,6 +70,8 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
                 onEditTodo={onEditTodo}
                 onCancelEdit={onCancelEdit}
                 editingTodo={editingTodo}
+                attributes={attributes || {}}
+                listeners={listeners || {}}
             />
         </div>
     );
@@ -120,7 +122,17 @@ interface TodoListProps {
 const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, className, onEditTodo, onCancelEdit, editingTodo }) => {
     // Dnd-kitのセンサーを設定（ポインターとキーボード操作に対応）
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(MouseSensor, {
+            activationConstraint: {
+                distance: 10, // 10pxの移動でドラッグ開始
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 500, // 500msの長押しでドラッグ開始
+                tolerance: 5, // 5pxの移動許容範囲
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
