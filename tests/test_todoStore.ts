@@ -32,12 +32,12 @@ describe('todoStore', () => {
     });
 
     it('should add a todo', () => {
-        const todos = addTodo('Test Todo', 'medium');
+        const todos = addTodo('Test Todo', false);
         expect(todos.length).toBe(1);
         expect(todos[0]).toEqual({
             id: '1678886400000',
             text: 'Test Todo',
-            priority: 'medium',
+            isPriority: false,
             dueDate: undefined,
             completed: false,
             pomodorosCompleted: 0,
@@ -46,12 +46,12 @@ describe('todoStore', () => {
     });
 
     it('should add a todo with a due date', () => {
-        const todos = addTodo('Test Todo with Due Date', 'high', '2025-12-31');
+        const todos = addTodo('Test Todo with Due Date', false, '2025-12-31');
         expect(todos.length).toBe(1);
         expect(todos[0]).toEqual({
             id: '1678886400000',
             text: 'Test Todo with Due Date',
-            priority: 'high',
+            isPriority: false,
             dueDate: '2025-12-31',
             completed: false,
             pomodorosCompleted: 0,
@@ -59,7 +59,7 @@ describe('todoStore', () => {
     });
 
     it('should update an existing todo', () => {
-        addTodo('Test Todo', 'medium');
+        addTodo('Test Todo', false);
         const updatedTodos = updateTodo('1678886400000', { text: 'Updated Todo', completed: true });
         expect(updatedTodos.length).toBe(1);
         expect(updatedTodos[0].text).toBe('Updated Todo');
@@ -68,16 +68,16 @@ describe('todoStore', () => {
     });
 
     it('should not update if todo id does not exist', () => {
-        addTodo('Test Todo', 'medium');
+        addTodo('Test Todo', false);
         const originalTodos = getTodos();
         const updatedTodos = updateTodo('non-existent-id', { text: 'Non Existent' });
         expect(updatedTodos).toEqual(originalTodos);
     });
 
     it('should delete a todo', () => {
-        addTodo('Test Todo 1', 'medium');
+        addTodo('Test Todo 1', false);
         vi.spyOn(Date, 'now').mockReturnValue(1678886400001); // Mock for the second todo's ID
-        addTodo('Test Todo 2', 'low');
+        addTodo('Test Todo 2', false);
         const updatedTodos = deleteTodo('1678886400000');
         expect(updatedTodos.length).toBe(1);
         expect(updatedTodos[0].text).toBe('Test Todo 2');
@@ -85,18 +85,18 @@ describe('todoStore', () => {
     });
 
     it('should not delete if todo id does not exist', () => {
-        addTodo('Test Todo', 'medium');
+        addTodo('Test Todo', false);
         const originalTodos = getTodos();
         const updatedTodos = deleteTodo('non-existent-id');
         expect(updatedTodos).toEqual(originalTodos);
     });
 
     it('should reorder todos', () => {
-        addTodo('Todo 1', 'low');
+        addTodo('Todo 1', false);
         vi.spyOn(Date, 'now').mockReturnValue(1678886400001); // Next ID
-        addTodo('Todo 2', 'medium');
+        addTodo('Todo 2', false);
         vi.spyOn(Date, 'now').mockReturnValue(1678886400002); // Next ID
-        addTodo('Todo 3', 'high');
+        addTodo('Todo 3', false);
 
         const initialTodos = getTodos();
         expect(initialTodos.map(todo => todo.text)).toEqual(['Todo 1', 'Todo 2', 'Todo 3']);
@@ -107,7 +107,7 @@ describe('todoStore', () => {
     });
 
     it('should toggle todo completed status', () => {
-        addTodo('Test Todo', 'medium');
+        addTodo('Test Todo', false);
         const todosAfterToggle = toggleTodoCompleted('1678886400000');
         expect(todosAfterToggle[0].completed).toBe(true);
 
@@ -117,7 +117,7 @@ describe('todoStore', () => {
     });
 
     it('should increment pomodorosCompleted', () => {
-        addTodo('Test Todo', 'medium');
+        addTodo('Test Todo', false);
         const todosAfterIncrement = incrementPomodorosCompleted('1678886400000');
         expect(todosAfterIncrement[0].pomodorosCompleted).toBe(1);
 
