@@ -55,6 +55,47 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
     const isEditingCurrentTodo = editingTodo && editingTodo.id === todo.id;
 
     /**
+     * @brief 期日をフォーマットするヘルパー関数
+     * @param dueDateString - フォーマットする期日文字列 (YYYY-MM-DD)
+     * @returns フォーマットされた期日文字列
+     */
+    const formatDueDate = (dueDateString: string) => {
+        const today = new Date();
+        const dueDate = new Date(dueDateString);
+
+        // 時間情報をリセットして日付のみを比較
+        today.setHours(0, 0, 0, 0);
+        dueDate.setHours(0, 0, 0, 0);
+
+        const diffTime = dueDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        // 1週間以内の場合
+        if (diffDays >= 0 && diffDays <= 7) {
+            if (diffDays === 0) {
+                return '今日';
+            } else if (diffDays === 1) {
+                return '明日';
+            } else {
+                return `${diffDays}日後`;
+            }
+        }
+
+        // 同じ年の場合、年を表示しない
+        if (today.getFullYear() === new Date(dueDateString).getFullYear()) {
+            const month = new Date(dueDateString).getMonth() + 1;
+            const day = new Date(dueDateString).getDate();
+            return `${month}月${day}日`;
+        }
+
+        // それ以外の場合は通常の形式 (YYYY年MM月DD日)
+        const year = new Date(dueDateString).getFullYear();
+        const month = new Date(dueDateString).getMonth() + 1;
+        const day = new Date(dueDateString).getDate();
+        return `${year}年${month}月${day}日`;
+    };
+
+    /**
      * @brief TODOの完了状態をトグルするハンドラ
      * @param なし
      * @returns なし
@@ -118,8 +159,8 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                             aria-label="Toggle todo completed"
                         />
                     )}
-                    {/* TODOの内容（クリックでポモドーロ開始/再開/一時停止）*/}
-                    <div onClick={handleToggleActive} className="flex items-center cursor-pointer flex-grow">
+                    {/* TODOの内容（クリックでポモドーロ開始）*/}
+                    <div onClick={handleToggleActive} className="flex flex-col cursor-pointer flex-grow">
                         {/* TODOテキスト（完了状態によってスタイル変更）*/}
                         <span className={`text-lg ${todo.completed ? 'font-bold text-gray-700' : 'text-gray-900'}`}>
                             {todo.isPriority && <span className="mr-1 text-red-500 font-bold">！</span>}
@@ -127,7 +168,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                         </span>
 
                         {/* 期限日 */}
-                        {todo.dueDate && <span className="ml-2 text-sm text-gray-500">({todo.dueDate})</span>}
+                        {todo.dueDate && <span className="block text-sm text-gray-500 mt-1">{formatDueDate(todo.dueDate)}</span>}
                     </div>
                 </div>
                 <div className="flex items-center">
