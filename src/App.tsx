@@ -143,6 +143,12 @@ function App() {
 
   return (
     <div className="h-screen bg-gray-100 flex flex-col items-stretch py-4 relative pb-20">
+      {/* 休憩タイマーの残り時間表示 */}
+      {isRunning && !isWorking && (
+        <div className="fixed top-0 left-0 w-full bg-blue-500 text-white text-center py-2 text-lg font-bold z-50">
+          休憩中: {`${Math.floor(time / 60).toString().padStart(2, '0')}:${(time % 60).toString().padStart(2, '0')}`}
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0 w-full flex-grow">
         <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg flex flex-col flex-grow">
