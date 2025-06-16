@@ -44,6 +44,37 @@ const usePomodoroTimer = (): UsePomodoroTimerReturn => {
     // setIntervalのIDを保持するためのref
     const intervalRef = useRef<number | null>(null);
 
+    // 通知をService Workerに要求する関数
+    const requestNotification = useCallback(async (title: string, body: string) => {
+        if (!('Notification' in window)) {
+            console.warn('This browser does not support notifications.');
+            return;
+        }
+
+        if (Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                console.warn('Notification permission not granted.');
+                return;
+            }
+        } else if (Notification.permission === 'denied') {
+            console.warn('Notification permission denied by user.');
+            return;
+        }
+
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    title: title,
+                    body: body,
+                },
+            });
+        } else {
+            console.warn('Service Worker not active. Cannot send notification via SW. This might cause issues on some platforms.');
+        }
+    }, []);
+
     // isWorkingの状態が変更されたときに、タイマーの残り時間を初期化する
     useEffect(() => {
         setTime(isWorking ? WORK_TIME : BREAK_TIME);
@@ -121,15 +152,7 @@ const usePomodoroTimer = (): UsePomodoroTimerReturn => {
 
             // 通知
             const notificationText = isWorking ? '作業時間終了！休憩しましょう！' : '休憩時間終了！作業を再開しましょう！';
-            if (Notification.permission === 'granted') {
-                new Notification('ポモドーロタイマー', { body: notificationText });
-            } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        new Notification('ポモドーロタイマー', { body: notificationText });
-                    }
-                });
-            }
+            requestNotification('ポモドーロタイマー', notificationText); // 新しい関数を使用
 
             // 音声通知
             const audio = new Audio('/sounds/bell.mp3'); // 仮のパス
@@ -142,7 +165,7 @@ const usePomodoroTimer = (): UsePomodoroTimerReturn => {
                 clearInterval(intervalRef.current);
             }
         };
-    }, [time, isRunning, isWorking]);
+    }, [time, isRunning, isWorking, requestNotification]); // requestNotification を依存配列に追加
 
     // コンポーネントがアンマウントされたときに最終的なクリーンアップを行う
     useEffect(() => {
