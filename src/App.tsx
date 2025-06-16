@@ -17,15 +17,26 @@ function App() {
   // 現在アクティブな（ポモドーロタイマーの対象となっている）TODOのIDを管理するstate
   const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
 
+  // アプリケーションヘッダーに表示する日付と曜日を管理するstate
+  const [currentDate, setCurrentDate] = useState('');
+  const [currentDay, setCurrentDay] = useState('');
+
   // カスタムフックからポモドーロタイマーの状態と操作関数を取得
-  const { time, isRunning, isWorking, startTimer, pauseTimer, resetTimer, toggleMode, WORK_TIME /* BREAK_TIME */ } = usePomodoroTimer();
+  const { time, isRunning, isWorking, startTimer, resetTimer, toggleMode, WORK_TIME /* BREAK_TIME */ } = usePomodoroTimer();
 
   /**
    * @brief コンポーネントのマウント時にTODOをLocal Storageから読み込む副作用
+   *        および現在の日付と曜日を設定する副作用
    */
   useEffect(() => {
     setTodos(getTodos());
     console.log('App: Initial todos loaded', getTodos());
+
+    const date = new Date();
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    setCurrentDate(date.toLocaleDateString('ja-JP', options));
+    const dayOptions: Intl.DateTimeFormatOptions = { weekday: 'long' };
+    setCurrentDay(date.toLocaleDateString('ja-JP', dayOptions));
   }, []); // 空の依存配列により、コンポーネントマウント時に一度だけ実行
 
   /**
@@ -141,6 +152,15 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
+      {/* アプリケーションヘッダー */}
+      <header className="w-full max-w-4xl bg-blue-600 text-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Todo App</h1>
+        <div className="text-right">
+          <p className="text-sm">{currentDate}</p>
+          <p className="text-lg font-semibold">{currentDay}</p>
+        </div>
+      </header>
+
       <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0 w-full max-w-4xl">
         {/* TODOリストセクション */}
         <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg">
