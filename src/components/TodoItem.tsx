@@ -37,7 +37,7 @@ interface TodoItemProps {
     isWorking: boolean;
     onProgressCircleClick: (id: string) => void;
     editingTodo?: Todo | null;
-    onEditTodo: (id: string, text: string, priority: Todo['priority'], dueDate?: string) => void;
+    onEditTodo: (id: string, text: string, isPriority: boolean, dueDate?: string) => void;
     onCancelEdit: () => void;
 }
 
@@ -122,14 +122,12 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                     <div onClick={handleToggleActive} className="flex items-center cursor-pointer flex-grow">
                         {/* TODOテキスト（完了状態によってスタイル変更）*/}
                         <span className={`text-lg ${todo.completed ? 'font-bold text-gray-700' : 'text-gray-900'}`}>
+                            {todo.isPriority && <span className="mr-1 text-red-500 font-bold">！</span>}
                             {todo.text}
                         </span>
 
-                        {/* 期限日と優先度 */}
+                        {/* 期限日 */}
                         {todo.dueDate && <span className="ml-2 text-sm text-gray-500">({todo.dueDate})</span>}
-                        <span className={`ml-2 text-sm ${todo.priority === 'high' ? 'text-red-600' : todo.priority === 'medium' ? 'text-orange-500' : 'text-blue-500'}`}>
-                            [{todo.priority}]
-                        </span>
                     </div>
                 </div>
                 <div className="flex items-center">

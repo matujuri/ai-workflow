@@ -10,8 +10,8 @@ import type { Todo } from '../types/todo';
  * @param onCancelEdit - 編集キャンセル時のコールバック関数
  */
 interface TodoFormProps {
-    onAddTodo: (text: string, priority: Todo['priority'], dueDate?: string) => void;
-    onEditTodo: (id: string, text: string, priority: Todo['priority'], dueDate?: string) => void;
+    onAddTodo: (text: string, isPriority: boolean, dueDate?: string) => void;
+    onEditTodo: (id: string, text: string, isPriority: boolean, dueDate?: string) => void;
     editingTodo?: Todo | null; // 編集中のTODOを受け取る
     onCancelEdit: () => void; // 編集キャンセル時のコールバック
 }
@@ -24,7 +24,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
     // 入力テキストの状態
     const [inputText, setInputText] = useState('');
     // 優先度の状態
-    const [priority, setPriority] = useState<Todo['priority']>('medium');
+    const [isPriority, setIsPriority] = useState<boolean>(false);
     // 期日の状態
     const [dueDate, setDueDate] = useState<string>('');
 
@@ -35,11 +35,11 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
     useEffect(() => {
         if (editingTodo) {
             setInputText(editingTodo.text);
-            setPriority(editingTodo.priority);
+            setIsPriority(editingTodo.isPriority);
             setDueDate(editingTodo.dueDate || '');
         } else {
             setInputText('');
-            setPriority('medium');
+            setIsPriority(false);
             setDueDate('');
         }
     }, [editingTodo]); // editingTodoが変更されたときに実行
@@ -55,14 +55,14 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
         if (inputText.trim()) { // 入力テキストが空でないことを確認
             if (editingTodo) {
                 // 編集モードの場合、onEditTodoを呼び出す
-                onEditTodo(editingTodo.id, inputText, priority, dueDate || undefined);
+                onEditTodo(editingTodo.id, inputText, isPriority, dueDate || undefined);
             } else {
                 // 追加モードの場合、onAddTodoを呼び出す
-                onAddTodo(inputText, priority, dueDate || undefined);
+                onAddTodo(inputText, isPriority, dueDate || undefined);
             }
             // フォームをリセット
             setInputText('');
-            setPriority('medium');
+            setIsPriority(false);
             setDueDate('');
             onCancelEdit(); // フォーム送信後に編集状態をクリア
         }
@@ -76,7 +76,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
      */
     const handleCancel = () => {
         setInputText('');
-        setPriority('medium');
+        setIsPriority(false);
         setDueDate('');
         onCancelEdit(); // 編集状態をクリア
     };
@@ -93,18 +93,32 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
                 className="w-full p-2 mb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <div className="flex items-center mb-4">
-                {/* 優先度選択ドロップダウン */}
-                <label htmlFor="priority-select" className="mr-2 text-sm font-medium text-gray-700">優先度:</label>
-                <select
-                    id="priority-select"
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value as Todo['priority'])}
-                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    <option value="low">低</option>
-                    <option value="medium">中</option>
-                    <option value="high">高</option>
-                </select>
+                {/* 優先度選択ラジオボタン */}
+                <label className="mr-2 text-sm font-medium text-gray-700">優先:</label>
+                <div className="flex items-center space-x-4">
+                    <label className="inline-flex items-center">
+                        <input
+                            type="radio"
+                            name="priority"
+                            value="true"
+                            checked={isPriority === true}
+                            onChange={() => setIsPriority(true)}
+                            className="form-radio h-4 w-4 text-blue-600"
+                        />
+                        <span className="ml-2 text-gray-700">はい</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                        <input
+                            type="radio"
+                            name="priority"
+                            value="false"
+                            checked={isPriority === false}
+                            onChange={() => setIsPriority(false)}
+                            className="form-radio h-4 w-4 text-blue-600"
+                        />
+                        <span className="ml-2 text-gray-700">いいえ</span>
+                    </label>
+                </div>
                 {/* 期日入力フィールド */}
                 <label htmlFor="due-date-input" className="ml-4 mr-2 text-sm font-medium text-gray-700">期日:</label>
                 <input

@@ -42,16 +42,16 @@ export const getTodos = (): Todo[] => {
 /**
  * @brief 新しいTODOアイテムを追加する
  * @param text - TODOのテキスト内容
- * @param priority - TODOの優先度
+ * @param isPriority - TODOが優先されるかどうかのフラグ
  * @param dueDate - TODOの期限日（オプション）
  * @returns Todo[] - 更新されたTODOアイテムの配列
  */
-export const addTodo = (text: string, priority: Todo['priority'], dueDate?: string): Todo[] => {
+export const addTodo = (text: string, isPriority: boolean, dueDate?: string): Todo[] => {
     const todos = loadTodos();
     const newTodo: Todo = {
         id: Date.now().toString(), // ユニークIDを生成
         text,
-        priority,
+        isPriority,
         dueDate,
         completed: false,
         pomodorosCompleted: 0,

@@ -45,13 +45,13 @@ function App() {
   /**
    * @brief 新しいTODOアイテムを追加するハンドラ
    * @param text - TODOのテキスト内容
-   * @param priority - TODOの優先度
+   * @param isPriority - TODOが優先されるかどうかのフラグ
    * @param dueDate - TODOの期限日（オプション）
    * @returns なし
    */
-  const handleAddTodo = (text: string, priority: Todo['priority'], dueDate?: string) => {
-    console.log('App: handleAddTodo called with', { text, priority, dueDate });
-    setTodos(addTodo(text, priority, dueDate));
+  const handleAddTodo = (text: string, isPriority: boolean, dueDate?: string) => {
+    console.log('App: handleAddTodo called with', { text, isPriority, dueDate });
+    setTodos(addTodo(text, isPriority, dueDate));
     setShowAddTodoForm(false); // TODO追加後にフォームを非表示にする
   };
 
@@ -79,13 +79,13 @@ function App() {
    * @brief TODOを更新するハンドラ
    * @param id - 更新するTODOのID
    * @param text - 新しいTODOのテキスト内容
-   * @param priority - 新しいTODOの優先度
+   * @param isPriority - 新しいTODOの優先度
    * @param dueDate - 新しいTODOの期限日（オプション）
    * @returns なし
    */
-  const handleUpdateTodo = (id: string, text: string, priority: Todo['priority'], dueDate?: string) => {
-    console.log('App: handleUpdateTodo called with', { id, text, priority, dueDate });
-    setTodos(updateTodo(id, { text, priority, dueDate }));
+  const handleUpdateTodo = (id: string, text: string, isPriority: boolean, dueDate?: string) => {
+    console.log('App: handleUpdateTodo called with', { id, text, isPriority, dueDate });
+    setTodos(updateTodo(id, { text, isPriority, dueDate }));
     setEditingTodo(null);
   };
 
