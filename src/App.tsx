@@ -33,7 +33,6 @@ function App() {
    */
   useEffect(() => {
     setTodos(getTodos());
-    console.log('App: Initial todos loaded', getTodos());
 
     const date = new Date();
     const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -50,7 +49,6 @@ function App() {
    * @returns なし
    */
   const handleAddTodo = (text: string, isPriority: boolean, dueDate?: string) => {
-    console.log('App: handleAddTodo called with', { text, isPriority, dueDate });
     setTodos(addTodo(text, isPriority, dueDate));
     setShowAddTodoForm(false); // TODO追加後にフォームを非表示にする
   };
@@ -61,7 +59,6 @@ function App() {
    * @returns なし
    */
   const handleToggleCompleted = (id: string) => {
-    console.log('App: handleToggleCompleted called with ID', id);
     setTodos(toggleTodoCompleted(id));
   };
 
@@ -71,7 +68,6 @@ function App() {
    * @returns なし
    */
   const handleDelete = (id: string) => {
-    console.log('App: handleDelete called with ID', id);
     setTodos(deleteTodo(id));
   };
 
@@ -84,7 +80,6 @@ function App() {
    * @returns なし
    */
   const handleUpdateTodo = (id: string, text: string, isPriority: boolean, dueDate?: string) => {
-    console.log('App: handleUpdateTodo called with', { id, text, isPriority, dueDate });
     setTodos(updateTodo(id, { text, isPriority, dueDate }));
     setEditingTodo(null);
   };
@@ -114,7 +109,6 @@ function App() {
    * @returns なし
    */
   const handleSort = (oldIndex: number, newIndex: number) => {
-    console.log('App: handleSort called with', { oldIndex, newIndex });
     setTodos(reorderTodos(oldIndex, newIndex));
   };
 
@@ -127,7 +121,6 @@ function App() {
 
     // アクティブなTODOが既に存在する場合、何もしない
     if (activeTodoId !== null) {
-      console.log("すでにアクティブなTODOがあるため、クリックを無視します。");
       return;
     }
 
@@ -149,8 +142,6 @@ function App() {
       setActiveTodoId(null); // 休憩タイマーはTODOと紐づかないため、アクティブTODOを解除
       toggleMode(); // 休憩モードに切り替え (usePomodoroTimerで時間がBREAK_TIMEになる)
       startTimer(); // 休憩タイマーを開始
-    } else {
-      console.log("Progress circle click ignored. Conditions not met for starting break timer.");
     }
   };
 
@@ -170,7 +161,7 @@ function App() {
     <div className="h-screen bg-gray-100 flex flex-col items-stretch py-4">
 
       <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0 w-full flex-grow">
-        <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg flex flex-col flex-grow overflow-y-auto">
+        <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg flex flex-col flex-grow">
           <div className="text-center mb-4">
             <p className="text-lg font-semibold text-gray-800">{currentDate}</p>
             <p className="text-sm text-gray-600">{currentDay}</p>
@@ -188,11 +179,13 @@ function App() {
             time={time}
             WORK_TIME={WORK_TIME}
             isWorking={isWorking}
-            className="flex-grow"
             onClickEmptySpace={handleToggleAddTodoForm}
+            onEditTodo={handleUpdateTodo}
+            onCancelEdit={handleCancelEdit}
+            editingTodo={editingTodo}
           />
           {/* TODOフォーム - showAddTodoFormがtrueまたはeditingTodoが存在する場合に表示 */}
-          {(showAddTodoForm || editingTodo) && (
+          {showAddTodoForm && (
             <TodoForm
               onAddTodo={handleAddTodo}
               onEditTodo={handleUpdateTodo}

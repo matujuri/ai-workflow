@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import type { Todo } from '../types/todo';
 import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
@@ -53,6 +53,14 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
 
     // 現在のTODOが編集中のTODOであるか
     const isEditingCurrentTodo = editingTodo && editingTodo.id === todo.id;
+
+    const formRef = useRef<HTMLFormElement>(null);
+
+    useEffect(() => {
+        if (isEditingCurrentTodo && formRef.current) {
+            formRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, [isEditingCurrentTodo]);
 
     /**
      * @brief 期日をフォーマットするヘルパー関数
@@ -110,7 +118,6 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
      * @returns なし
      */
     const handleDelete = () => {
-        console.log('Delete button clicked for todo:', todo.id);
         if (window.confirm('このTODOを削除してもよろしいですか？')) {
             onDelete(todo.id);
         }
@@ -122,7 +129,6 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
      * @returns なし
      */
     const handleEditClick = () => {
-        console.log('Edit button clicked for todo:', todo.id);
         onStartEdit(todo);
     };
 
@@ -136,7 +142,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
     };
 
     return (
-        <>
+        <div className="relative flex flex-col">
             <div className={`flex items-center justify-between p-2 my-1 border rounded shadow-sm ${todo.completed ? 'bg-gray-200' : 'bg-white'}`}>
                 <div className="flex items-center">
                     {/* ドラッグ＆ドロップのハンドル */}
@@ -208,9 +214,10 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                     onEditTodo={onEditTodo}
                     editingTodo={editingTodo}
                     onCancelEdit={onCancelEdit}
+                    ref={formRef}
                 />
             )}
-        </>
+        </div>
     );
 };
 

@@ -3,6 +3,8 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Todo } from '../types/todo';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import TodoItem from './TodoItem';
 
 /**
@@ -18,6 +20,9 @@ import TodoItem from './TodoItem';
  * @param WORK_TIME - ポモドーロ作業時間の総時間
  * @param isWorking - 現在が作業時間中かどうかを示すフラグ
  * @param onProgressCircleClick - TODOの進捗円をクリックしたときに呼び出されるコールバック関数
+ * @param onEditTodo - TODOの編集を行うコールバック関数
+ * @param onCancelEdit - TODOの編集をキャンセルするコールバック関数
+ * @param editingTodo - 編集中のTODOアイテムオブジェクト（オプション）
  */
 interface SortableTodoItemProps {
     todo: Todo;
@@ -30,6 +35,9 @@ interface SortableTodoItemProps {
     WORK_TIME: number;
     isWorking: boolean;
     onProgressCircleClick: (id: string) => void;
+    onEditTodo: (id: string, text: string, isPriority: boolean, dueDate?: string) => void;
+    onCancelEdit: () => void;
+    editingTodo?: Todo | null;
 }
 
 /**
@@ -37,7 +45,7 @@ interface SortableTodoItemProps {
  * useSortableフックを使用してDND機能を提供し、内部でTodoItemを表示します。
  * @param props - SortableTodoItemPropsで定義されたプロパティ
  */
-const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick }) => {
+const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, onEditTodo, onCancelEdit, editingTodo }) => {
     // DND-kitのuseSortableフックから必要な属性とリスナーを取得
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: todo.id });
 
@@ -55,14 +63,15 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
                 onToggleCompleted={onToggleCompleted}
                 onDelete={onDelete}
                 onStartEdit={onStartEdit}
-                attributes={attributes}
-                listeners={listeners}
                 activeTodoId={activeTodoId}
                 onSetAsActiveTodo={onSetAsActiveTodo}
                 time={time}
                 WORK_TIME={WORK_TIME}
                 isWorking={isWorking}
                 onProgressCircleClick={onProgressCircleClick}
+                onEditTodo={onEditTodo}
+                onCancelEdit={onCancelEdit}
+                editingTodo={editingTodo}
             />
         </div>
     );
@@ -84,6 +93,9 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
  * @param onProgressCircleClick - TODOの進捗円をクリックしたときに呼び出されるコールバック関数
  * @param className - 追加のクラス名
  * @param onClickEmptySpace - 空きスペースクリック時のハンドラ
+ * @param onEditTodo - TODOの編集を行うコールバック関数
+ * @param onCancelEdit - TODOの編集をキャンセルするコールバック関数
+ * @param editingTodo - 編集中のTODOアイテムオブジェクト（オプション）
  */
 interface TodoListProps {
     todos: Todo[];
@@ -99,6 +111,9 @@ interface TodoListProps {
     onProgressCircleClick: (id: string) => void;
     className?: string;
     onClickEmptySpace: () => void;
+    onEditTodo: (id: string, text: string, isPriority: boolean, dueDate?: string) => void;
+    onCancelEdit: () => void;
+    editingTodo?: Todo | null;
 }
 
 /**
@@ -106,7 +121,7 @@ interface TodoListProps {
  * DndContextとSortableContextを提供し、SortableTodoItemをレンダリングします。
  * @param props - TodoListPropsで定義されたプロパティ
  */
-const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, className, onClickEmptySpace }) => {
+const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, className, onClickEmptySpace, onEditTodo, onCancelEdit, editingTodo }) => {
     // Dnd-kitのセンサーを設定（ポインターとキーボード操作に対応）
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -138,7 +153,6 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete,
                 <div
                     className={`space-y-2 flex flex-col flex-grow relative ${className}`}
                     onClick={(e) => {
-                        // クリックが現在の要素（このdiv自体）で発生した場合のみonClickEmptySpaceを呼び出す
                         if (e.target === e.currentTarget) {
                             onClickEmptySpace();
                         }
@@ -157,6 +171,9 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete,
                             WORK_TIME={WORK_TIME}
                             isWorking={isWorking}
                             onProgressCircleClick={onProgressCircleClick}
+                            onEditTodo={onEditTodo}
+                            onCancelEdit={onCancelEdit}
+                            editingTodo={editingTodo}
                         />
                     ))}
                 </div>

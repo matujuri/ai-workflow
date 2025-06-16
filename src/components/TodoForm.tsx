@@ -20,7 +20,7 @@ interface TodoFormProps {
  * @brief TODOの追加・編集フォームコンポーネント
  * @param props - TodoFormPropsで定義されたプロパティ
  */
-const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo, onCancelEdit }) => {
+const TodoForm = React.forwardRef<HTMLFormElement, TodoFormProps>(({ onAddTodo, onEditTodo, editingTodo, onCancelEdit }, ref) => {
     // 入力テキストの状態
     const [inputText, setInputText] = useState('');
     // 優先度の状態
@@ -82,7 +82,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col mb-4 p-4 border border-gray-200 rounded-lg shadow-sm">
+        <form onSubmit={handleSubmit} ref={ref} className="flex flex-col mb-4 p-4 border border-gray-200 rounded-lg shadow-sm">
             {/* TODOテキスト入力フィールド */}
             <input
                 type="text"
@@ -150,6 +150,6 @@ const TodoForm: React.FC<TodoFormProps> = ({ onAddTodo, onEditTodo, editingTodo,
             </div>
         </form>
     );
-};
+});
 
 export default TodoForm; 
