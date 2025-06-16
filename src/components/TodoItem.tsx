@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import type { Todo } from '../types/todo';
 import TodoEditForm from './TodoEditForm';
 
@@ -53,6 +53,8 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
     const isEditingCurrentTodo = editingTodo && editingTodo.id === todo.id;
 
     const formRef = useRef<HTMLFormElement>(null);
+    // ホバー状態を管理するstate
+    const [showButtons, setShowButtons] = useState(false);
 
     useEffect(() => {
         if (isEditingCurrentTodo && formRef.current) {
@@ -146,7 +148,11 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
             {...attributes}
             {...listeners}
         >
-            <div className={`flex items-center justify-between p-2 my-1 border rounded shadow-sm ${todo.completed ? 'bg-gray-200' : 'bg-white'}`}>
+            <div
+                className={`flex items-center justify-between p-2 my-1 border rounded shadow-sm ${todo.completed ? 'bg-gray-200' : 'bg-white'}`}
+                onMouseEnter={() => setShowButtons(true)}
+                onMouseLeave={() => setShowButtons(false)}
+            >
                 <div className="flex items-center">
                     {/* ドラッグ＆ドロップのハンドルは不要になるため削除 */}
                     {/* <span className="cursor-grab text-gray-400 mr-2">::</span> */}
@@ -204,10 +210,13 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                     ) : (
                         null
                     )}
-                    {/* 編集ボタン */}
-                    <button onClick={(e) => { e.stopPropagation(); handleEditClick(); }} className="text-sm text-blue-500 hover:underline mr-2" aria-label="Edit todo">Edit</button>
-                    {/* 削除ボタン */}
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="text-sm text-red-500 hover:underline" aria-label="Delete todo">Delete</button>
+                    <div className="flex items-center transition-opacity duration-300"
+                        style={{ opacity: showButtons || isEditingCurrentTodo ? 1 : 0 }}>
+                        {/* 編集ボタン */}
+                        <button onClick={(e) => { e.stopPropagation(); handleEditClick(); }} className="text-sm text-blue-500 hover:underline mr-2" aria-label="Edit todo">Edit</button>
+                        {/* 削除ボタン */}
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="text-sm text-red-500 hover:underline" aria-label="Delete todo">Delete</button>
+                    </div>
                 </div>
             </div>
             {/* 編集中のTODOであれば、その直下にTodoEditFormを表示 */}
