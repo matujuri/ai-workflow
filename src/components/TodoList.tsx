@@ -82,6 +82,8 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
  * @param WORK_TIME - ポモドーロ作業時間の総時間
  * @param isWorking - 現在が作業時間中かどうかを示すフラグ
  * @param onProgressCircleClick - TODOの進捗円をクリックしたときに呼び出されるコールバック関数
+ * @param className - 追加のクラス名
+ * @param onClickEmptySpace - 空きスペースクリック時のハンドラ
  */
 interface TodoListProps {
     todos: Todo[];
@@ -95,6 +97,8 @@ interface TodoListProps {
     WORK_TIME: number;
     isWorking: boolean;
     onProgressCircleClick: (id: string) => void;
+    className?: string;
+    onClickEmptySpace: () => void;
 }
 
 /**
@@ -102,7 +106,7 @@ interface TodoListProps {
  * DndContextとSortableContextを提供し、SortableTodoItemをレンダリングします。
  * @param props - TodoListPropsで定義されたプロパティ
  */
-const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick }) => {
+const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, className, onClickEmptySpace }) => {
     // Dnd-kitのセンサーを設定（ポインターとキーボード操作に対応）
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -131,7 +135,15 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete,
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             {/* ソート可能なコンテキストを提供し、TODOアイテムをレンダリング */}
             <SortableContext items={todos.map(todo => todo.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
+                <div
+                    className={`space-y-2 flex flex-col flex-grow relative ${className}`}
+                    onClick={(e) => {
+                        // クリックが現在の要素（このdiv自体）で発生した場合のみonClickEmptySpaceを呼び出す
+                        if (e.target === e.currentTarget) {
+                            onClickEmptySpace();
+                        }
+                    }}
+                >
                     {todos.map((todo) => (
                         <SortableTodoItem
                             key={todo.id}

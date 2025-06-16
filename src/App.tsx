@@ -17,6 +17,9 @@ function App() {
   // 現在アクティブな（ポモドーロタイマーの対象となっている）TODOのIDを管理するstate
   const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
 
+  // TODO追加フォームの表示状態を管理するstate
+  const [showAddTodoForm, setShowAddTodoForm] = useState(false);
+
   // アプリケーションヘッダーに表示する日付と曜日を管理するstate
   const [currentDate, setCurrentDate] = useState('');
   const [currentDay, setCurrentDay] = useState('');
@@ -49,6 +52,7 @@ function App() {
   const handleAddTodo = (text: string, priority: Todo['priority'], dueDate?: string) => {
     console.log('App: handleAddTodo called with', { text, priority, dueDate });
     setTodos(addTodo(text, priority, dueDate));
+    setShowAddTodoForm(false); // TODO追加後にフォームを非表示にする
   };
 
   /**
@@ -150,27 +154,27 @@ function App() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
-      {/* アプリケーションヘッダー */}
-      <header className="w-full max-w-4xl bg-blue-600 text-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Todo App</h1>
-        <div className="text-right">
-          <p className="text-sm">{currentDate}</p>
-          <p className="text-lg font-semibold">{currentDay}</p>
-        </div>
-      </header>
+  /**
+   * @brief TODO追加フォームの表示/非表示を切り替えるハンドラ
+   * @param なし
+   * @returns なし
+   */
+  const handleToggleAddTodoForm = () => {
+    // 編集中でない場合にのみフォームの表示を切り替える
+    if (!editingTodo) {
+      setShowAddTodoForm(prev => !prev);
+    }
+  };
 
-      <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0 w-full max-w-4xl">
-        {/* TODOリストセクション */}
-        <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg">
-          {/* TODOフォーム */}
-          <TodoForm
-            onAddTodo={handleAddTodo}
-            onEditTodo={handleUpdateTodo}
-            editingTodo={editingTodo}
-            onCancelEdit={handleCancelEdit}
-          />
+  return (
+    <div className="h-screen bg-gray-100 flex flex-col items-stretch py-4">
+
+      <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0 w-full flex-grow">
+        <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg flex flex-col flex-grow overflow-y-auto">
+          <div className="text-center mb-4">
+            <p className="text-lg font-semibold text-gray-800">{currentDate}</p>
+            <p className="text-sm text-gray-600">{currentDay}</p>
+          </div>
           {/* TODOリスト */}
           <TodoList
             todos={todos}
@@ -184,7 +188,18 @@ function App() {
             time={time}
             WORK_TIME={WORK_TIME}
             isWorking={isWorking}
+            className="flex-grow"
+            onClickEmptySpace={handleToggleAddTodoForm}
           />
+          {/* TODOフォーム - showAddTodoFormがtrueまたはeditingTodoが存在する場合に表示 */}
+          {(showAddTodoForm || editingTodo) && (
+            <TodoForm
+              onAddTodo={handleAddTodo}
+              onEditTodo={handleUpdateTodo}
+              editingTodo={editingTodo}
+              onCancelEdit={handleCancelEdit}
+            />
+          )}
         </div>
       </div>
     </div>
