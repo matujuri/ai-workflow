@@ -26,9 +26,9 @@ interface UsePomodoroTimerReturn {
 }
 
 // ポモドーロ作業時間（25分を秒に変換）
-const WORK_TIME = 25 * 60;
+const WORK_TIME = 5;
 // ポモドーロ休憩時間（5分を秒に変換）
-const BREAK_TIME = 5 * 60;
+const BREAK_TIME = 3;
 
 /**
  * @brief ポモドーロタイマーのロジックを提供するカスタムReactフック
@@ -102,7 +102,7 @@ const usePomodoroTimer = (): UsePomodoroTimerReturn => {
             setTime(newIsWorking ? WORK_TIME : BREAK_TIME);
             return newIsWorking;
         });
-    }, [WORK_TIME, BREAK_TIME]);
+    }, []);
 
     // タイマーのカウントダウンロジックと通知処理
     useEffect(() => {
