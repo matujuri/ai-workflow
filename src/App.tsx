@@ -17,8 +17,6 @@ function App() {
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   // 現在アクティブな（ポモドーロタイマーの対象となっている）TODOのIDを管理するstate
   const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
-  // フォームの表示状態を管理するstate
-  const [showTodoForm, setShowTodoForm] = useState(false);
 
   // アプリケーションヘッダーに表示する日付と曜日を管理するstate
   const [currentDate, setCurrentDate] = useState('');
@@ -69,18 +67,6 @@ function App() {
   };
 
   /**
-   * @brief TODO追加フォームの表示/非表示を切り替えるハンドラ
-   * @returns なし
-   */
-  const toggleTodoFormVisibility = () => {
-    setShowTodoForm(prev => !prev);
-    // フォームを非表示にする際に編集中のTODOをリセット
-    if (editingTodo && showTodoForm) {
-      setEditingTodo(null);
-    }
-  };
-
-  /**
    * @brief 新しいTODOアイテムを追加するハンドラ
    * @param text - TODOのテキスト内容
    * @returns なし
@@ -127,7 +113,6 @@ function App() {
    */
   const handleStartEdit = (todo: Todo) => {
     setEditingTodo(todo);
-    setShowTodoForm(true); // Editボタンクリック時にフォームを表示
   };
 
   /**
@@ -193,7 +178,7 @@ function App() {
       {/* 休憩タイマーの残り時間表示 */}
       {isTimerActive ? (
         <div className={`fixed top-0 left-0 w-full text-white text-center py-2 text-lg font-bold z-50 flex justify-center items-center ${isWorking ? 'bg-red-500' : 'bg-blue-500'}`}>
-          <span>{isWorking ? '作業中' : '休憩中'}: {`${Math.floor(time / 60).toString().padStart(2, '0')}:${(time % 60).toString().padStart(2, '0')}`}</span>
+          <span>{isWorking ? '作業中' : '休憩中'}: {formatTime(time)}</span>
           <button
             onClick={isRunning ? pauseTimer : resumeTimer}
             className="ml-4 px-3 py-1 bg-white bg-opacity-20 rounded-md hover:bg-opacity-30 text-gray-800 text-sm"
