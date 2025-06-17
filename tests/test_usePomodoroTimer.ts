@@ -79,9 +79,9 @@ describe('usePomodoroTimer', () => {
         expect(result.current.time).toBe(WORK_TIME - 5);
 
         await act(async () => {
-            result.current.resetTimer();
+            result.current.stopTimer();
         });
-        // Ensure all effects from resetTimer() are flushed
+        // Ensure all effects from stopTimer() are flushed
         await act(async () => { });
         expect(result.current.time).toBe(WORK_TIME);
         expect(result.current.isRunning).toBe(false);

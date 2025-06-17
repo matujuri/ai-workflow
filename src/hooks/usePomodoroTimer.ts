@@ -128,13 +128,6 @@ const usePomodoroTimer = (): UsePomodoroTimerReturn => {
         });
     }, [postMessageToServiceWorker, initialWorkTime, initialBreakTime]);
 
-    // 通知をService Workerに要求する関数 (通知自体はService Workerが行い、こちらは音声のみを担当)
-    const requestNotification = useCallback(async (title: string, body: string) => {
-        // 音声通知
-        const audio = new Audio('/sounds/bell.mp3');
-        audio.play().catch(e => console.error('Audio playback failed:', e));
-    }, []);
-
     /**
      * @brief タイマーを開始する関数
      * Service Workerにタイマー開始を指示する。

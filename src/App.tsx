@@ -264,10 +264,10 @@ function App() {
             onSort={handleSort}
             activeTodoId={activeTodoId}
             onSetAsActiveTodo={handleTodoItemClick}
-            onProgressCircleClick={handleProgressCircleClick}
             time={time}
             initialWorkTimeTotal={initialPomodoroTime}
-            isWorking={isWorking}
+            onProgressCircleClick={handleProgressCircleClick}
+            className="mt-4"
             onEditTodo={handleUpdateTodo}
             onCancelEdit={handleCancelEdit}
             editingTodo={editingTodo}

@@ -15,7 +15,6 @@ import TodoItem from './TodoItem';
  * @param activeTodoId - 現在アクティブなTODOのID
  * @param onSetAsActiveTodo - TODOをアクティブに設定するコールバック関数
  * @param time - ポモドーロタイマーの残り時間
- * @param isWorking - 現在が作業時間中かどうかを示すフラグ
  * @param onProgressCircleClick - TODOの進捗円をクリックしたときに呼び出されるコールバック関数
  * @param onEditTodo - TODOの編集を行うコールバック関数
  * @param onCancelEdit - TODOの編集をキャンセルするコールバック関数
@@ -30,7 +29,6 @@ interface SortableTodoItemProps {
     activeTodoId: string | null;
     onSetAsActiveTodo: (id: string) => void;
     time: number;
-    isWorking: boolean;
     onProgressCircleClick: (id: string) => void;
     onEditTodo: (id: string, text: string, isPriority: boolean, dueDate?: string) => void;
     onCancelEdit: () => void;
@@ -43,7 +41,7 @@ interface SortableTodoItemProps {
  * useSortableフックを使用してDND機能を提供し、内部でTodoItemを表示します。
  * @param props - SortableTodoItemPropsで定義されたプロパティ
  */
-const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, isWorking, onProgressCircleClick, onEditTodo, onCancelEdit, editingTodo, initialWorkTimeTotal }) => {
+const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, onProgressCircleClick, onEditTodo, onCancelEdit, editingTodo, initialWorkTimeTotal }) => {
     // DND-kitのuseSortableフックから必要な属性とリスナーを取得
     const { setNodeRef, transform, transition, attributes, listeners } = useSortable({ id: todo.id });
 
@@ -64,7 +62,6 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
                 activeTodoId={activeTodoId}
                 onSetAsActiveTodo={onSetAsActiveTodo}
                 time={time}
-                isWorking={isWorking}
                 onProgressCircleClick={onProgressCircleClick}
                 onEditTodo={onEditTodo}
                 onCancelEdit={onCancelEdit}
@@ -88,7 +85,6 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
  * @param activeTodoId - 現在アクティブなTODOのID
  * @param onSetAsActiveTodo - TODOをアクティブに設定するコールバック関数
  * @param time - ポモドーロタイマーの残り時間
- * @param isWorking - 現在が作業時間中かどうかを示すフラグ
  * @param onProgressCircleClick - TODOの進捗円をクリックしたときに呼び出されるコールバック関数
  * @param className - 追加のクラス名
  * @param onEditTodo - TODOの編集を行うコールバック関数
@@ -105,7 +101,6 @@ interface TodoListProps {
     activeTodoId: string | null;
     onSetAsActiveTodo: (id: string) => void;
     time: number;
-    isWorking: boolean;
     onProgressCircleClick: (id: string) => void;
     className?: string;
     onEditTodo: (id: string, text: string, isPriority: boolean, dueDate?: string) => void;
@@ -119,7 +114,7 @@ interface TodoListProps {
  * DndContextとSortableContextを提供し、SortableTodoItemをレンダリングします。
  * @param props - TodoListPropsで定義されたプロパティ
  */
-const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, isWorking, onProgressCircleClick, className, onEditTodo, onCancelEdit, editingTodo, initialWorkTimeTotal }) => {
+const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, onProgressCircleClick, className, onEditTodo, onCancelEdit, editingTodo, initialWorkTimeTotal }) => {
     // Dnd-kitのセンサーを設定（ポインターとキーボード操作に対応）
     const sensors = useSensors(
         useSensor(MouseSensor, {
@@ -171,7 +166,6 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete,
                             activeTodoId={activeTodoId}
                             onSetAsActiveTodo={onSetAsActiveTodo}
                             time={time}
-                            isWorking={isWorking}
                             onProgressCircleClick={onProgressCircleClick}
                             onEditTodo={onEditTodo}
                             onCancelEdit={onCancelEdit}
