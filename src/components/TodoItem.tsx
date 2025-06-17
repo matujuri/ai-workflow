@@ -12,7 +12,6 @@ import TodoEditForm from './TodoEditForm';
  * @param activeTodoId - 現在アクティブなTODOのID
  * @param onSetAsActiveTodo - TODOをアクティブに設定するコールバック関数
  * @param time - ポモドーロタイマーの残り時間
- * @param WORK_TIME - ポモドーロ作業時間の総時間
  * @param isWorking - 現在が作業時間中かどうかを示すフラグ
  * @param onProgressCircleClick - 進捗円のクリックハンドラ
  * @param editingTodo - 編集中のTODO
@@ -20,6 +19,7 @@ import TodoEditForm from './TodoEditForm';
  * @param onCancelEdit - 編集をキャンセルするコールバック関数
  * @param attributes - コンポーネントに適用する追加の属性
  * @param listeners - コンポーネントに適用する追加のリスナー
+ * @param initialWorkTimeTotal - 追加
  */
 interface TodoItemProps {
     todo: Todo;
@@ -29,7 +29,6 @@ interface TodoItemProps {
     activeTodoId: string | null;
     onSetAsActiveTodo: (id: string) => void;
     time: number;
-    WORK_TIME: number;
     isWorking: boolean;
     onProgressCircleClick: (id: string) => void;
     editingTodo?: Todo | null;
@@ -37,17 +36,18 @@ interface TodoItemProps {
     onCancelEdit: () => void;
     attributes?: Record<string, any>;
     listeners?: Record<string, any>;
+    initialWorkTimeTotal: number;
 }
 
 /**
  * @brief 個々のTODOアイテムを表示し、操作（完了、削除、編集、ポモドーロ開始）を可能にするコンポーネント
  * @param props - TodoItemPropsで定義されたプロパティ
  */
-const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, onProgressCircleClick, editingTodo, onEditTodo, onCancelEdit, attributes, listeners }) => {
+const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, isWorking, onProgressCircleClick, editingTodo, onEditTodo, onCancelEdit, attributes, listeners, initialWorkTimeTotal }) => {
     // 現在表示中のTODOがアクティブなポモドーロの対象であるか
     const isCurrentActiveTodo = activeTodoId === todo.id;
     // 現在のポモドーロの進捗状況を計算（0-100%）
-    const progress = isCurrentActiveTodo ? ((WORK_TIME - time) / WORK_TIME) * 100 : 0;
+    const progress = initialWorkTimeTotal > 0 ? ((initialWorkTimeTotal - time) / initialWorkTimeTotal) * 100 : 0;
 
     // 現在のTODOが編集中のTODOであるか
     const isEditingCurrentTodo = editingTodo && editingTodo.id === todo.id;
@@ -195,7 +195,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggleCompleted, onDelete, 
                     )}
 
                     {/* 現在アクティブなTODOで、作業時間中であれば進捗円を表示 */}
-                    {isCurrentActiveTodo && isWorking ? (
+                    {isCurrentActiveTodo ? (
                         <div
                             className="relative w-6 h-6 rounded-full bg-blue-200 cursor-pointer flex items-center justify-center mr-1"
                             onClick={(e) => { e.stopPropagation(); onProgressCircleClick(todo.id); }}
