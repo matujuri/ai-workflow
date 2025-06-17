@@ -1,5 +1,5 @@
 import React from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Todo } from '../types/todo';
@@ -15,12 +15,11 @@ import TodoItem from './TodoItem';
  * @param activeTodoId - 現在アクティブなTODOのID
  * @param onSetAsActiveTodo - TODOをアクティブに設定するコールバック関数
  * @param time - ポモドーロタイマーの残り時間
- * @param WORK_TIME - ポモドーロ作業時間の総時間
- * @param isWorking - 現在が作業時間中かどうかを示すフラグ
- * @param isWorkTimeCompleted - 作業時間が完了したかどうかを示すフラグ
+ * @param onProgressCircleClick - TODOの進捗円をクリックしたときに呼び出されるコールバック関数
+ * @param onEditTodo - TODOの編集を行うコールバック関数
+ * @param onCancelEdit - TODOの編集をキャンセルするコールバック関数
  * @param editingTodo - 編集中のTODOアイテムオブジェクト（オプション）
- * @param onEditTodo - TODOを編集するコールバック関数
- * @param onCancelEdit - 編集キャンセル時のコールバック関数
+ * @param initialWorkTimeTotal - ポモドーロ開始時点の総作業時間
  */
 interface SortableTodoItemProps {
     todo: Todo;
@@ -30,12 +29,11 @@ interface SortableTodoItemProps {
     activeTodoId: string | null;
     onSetAsActiveTodo: (id: string) => void;
     time: number;
-    WORK_TIME: number;
-    isWorking: boolean;
-    isWorkTimeCompleted: boolean;
-    editingTodo: Todo | null;
-    onEditTodo: (id: string, text: string, priority: boolean, dueDate?: string) => void;
+    onProgressCircleClick: (id: string) => void;
+    onEditTodo: (id: string, text: string, isPriority: boolean, dueDate?: string) => void;
     onCancelEdit: () => void;
+    editingTodo?: Todo | null;
+    initialWorkTimeTotal: number;
 }
 
 /**
@@ -43,9 +41,9 @@ interface SortableTodoItemProps {
  * useSortableフックを使用してDND機能を提供し、内部でTodoItemを表示します。
  * @param props - SortableTodoItemPropsで定義されたプロパティ
  */
-const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, isWorkTimeCompleted, editingTodo, onEditTodo, onCancelEdit }) => {
+const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompleted, onDelete, onStartEdit, activeTodoId, onSetAsActiveTodo, time, onProgressCircleClick, onEditTodo, onCancelEdit, editingTodo, initialWorkTimeTotal }) => {
     // DND-kitのuseSortableフックから必要な属性とリスナーを取得
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: todo.id });
+    const { setNodeRef, transform, transition, attributes, listeners } = useSortable({ id: todo.id });
 
     // ドラッグ中のスタイルを適用
     const style = {
@@ -54,24 +52,23 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
     };
 
     return (
-        <div ref={setNodeRef} style={style}>
+        <div style={{ ...style, touchAction: 'none' }} ref={setNodeRef}>
             {/* 基本的なTODOアイテムを表示 */}
             <TodoItem
                 todo={todo}
                 onToggleCompleted={onToggleCompleted}
                 onDelete={onDelete}
                 onStartEdit={onStartEdit}
-                attributes={attributes}
-                listeners={listeners}
                 activeTodoId={activeTodoId}
                 onSetAsActiveTodo={onSetAsActiveTodo}
                 time={time}
-                WORK_TIME={WORK_TIME}
-                isWorking={isWorking}
-                isWorkTimeCompleted={isWorkTimeCompleted}
-                editingTodo={editingTodo}
+                onProgressCircleClick={onProgressCircleClick}
                 onEditTodo={onEditTodo}
                 onCancelEdit={onCancelEdit}
+                editingTodo={editingTodo}
+                attributes={attributes || {}}
+                listeners={listeners || {}}
+                initialWorkTimeTotal={initialWorkTimeTotal}
             />
         </div>
     );
@@ -88,12 +85,12 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggleCompl
  * @param activeTodoId - 現在アクティブなTODOのID
  * @param onSetAsActiveTodo - TODOをアクティブに設定するコールバック関数
  * @param time - ポモドーロタイマーの残り時間
- * @param WORK_TIME - ポモドーロ作業時間の総時間
- * @param isWorking - 現在が作業時間中かどうかを示すフラグ
- * @param isWorkTimeCompleted - 作業時間が完了したかどうかを示すフラグ
+ * @param onProgressCircleClick - TODOの進捗円をクリックしたときに呼び出されるコールバック関数
+ * @param className - 追加のクラス名
+ * @param onEditTodo - TODOの編集を行うコールバック関数
+ * @param onCancelEdit - TODOの編集をキャンセルするコールバック関数
  * @param editingTodo - 編集中のTODOアイテムオブジェクト（オプション）
- * @param onEditTodo - TODOを編集するコールバック関数
- * @param onCancelEdit - 編集キャンセル時のコールバック関数
+ * @param initialWorkTimeTotal - ポモドーロ開始時点の総作業時間
  */
 interface TodoListProps {
     todos: Todo[];
@@ -104,12 +101,12 @@ interface TodoListProps {
     activeTodoId: string | null;
     onSetAsActiveTodo: (id: string) => void;
     time: number;
-    WORK_TIME: number;
-    isWorking: boolean;
-    isWorkTimeCompleted: boolean;
-    editingTodo: Todo | null;
-    onEditTodo: (id: string, text: string, priority: boolean, dueDate?: string) => void;
+    onProgressCircleClick: (id: string) => void;
+    className?: string;
+    onEditTodo: (id: string, text: string, isPriority: boolean, dueDate?: string) => void;
     onCancelEdit: () => void;
+    editingTodo?: Todo | null;
+    initialWorkTimeTotal: number;
 }
 
 /**
@@ -117,10 +114,20 @@ interface TodoListProps {
  * DndContextとSortableContextを提供し、SortableTodoItemをレンダリングします。
  * @param props - TodoListPropsで定義されたプロパティ
  */
-const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, WORK_TIME, isWorking, isWorkTimeCompleted, editingTodo, onEditTodo, onCancelEdit }) => {
+const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete, onStartEdit, onSort, activeTodoId, onSetAsActiveTodo, time, onProgressCircleClick, className, onEditTodo, onCancelEdit, editingTodo, initialWorkTimeTotal }) => {
     // Dnd-kitのセンサーを設定（ポインターとキーボード操作に対応）
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(MouseSensor, {
+            activationConstraint: {
+                distance: 10, // 10pxの移動でドラッグ開始
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 500, // 500msの長押しでドラッグ開始
+                tolerance: 5, // 5pxの移動許容範囲
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -131,11 +138,11 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete,
      * @param event - ドラッグイベントオブジェクト
      * @returns なし
      */
-    const handleDragEnd = (event: any) => {
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
 
         // ドラッグ開始と終了のIDが異なる場合、並び替え処理を実行
-        if (active.id !== over.id) {
+        if (over && active.id !== over.id) {
             const oldIndex = todos.findIndex((item) => item.id === active.id);
             const newIndex = todos.findIndex((item) => item.id === over.id);
             onSort(oldIndex, newIndex);
@@ -146,7 +153,9 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete,
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             {/* ソート可能なコンテキストを提供し、TODOアイテムをレンダリング */}
             <SortableContext items={todos.map(todo => todo.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
+                <div
+                    className={`space-y-2 flex flex-col flex-grow relative ${className}`}
+                >
                     {todos.map((todo) => (
                         <SortableTodoItem
                             key={todo.id}
@@ -157,12 +166,11 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onToggleCompleted, onDelete,
                             activeTodoId={activeTodoId}
                             onSetAsActiveTodo={onSetAsActiveTodo}
                             time={time}
-                            WORK_TIME={WORK_TIME}
-                            isWorking={isWorking}
-                            isWorkTimeCompleted={isWorkTimeCompleted}
-                            editingTodo={editingTodo}
+                            onProgressCircleClick={onProgressCircleClick}
                             onEditTodo={onEditTodo}
                             onCancelEdit={onCancelEdit}
+                            editingTodo={editingTodo}
+                            initialWorkTimeTotal={initialWorkTimeTotal}
                         />
                     ))}
                 </div>

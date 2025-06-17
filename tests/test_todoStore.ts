@@ -37,7 +37,7 @@ describe('todoStore', () => {
         expect(todos[0]).toEqual({
             id: '1678886400000',
             text: 'Test Todo',
-            priority: false,
+            isPriority: false,
             dueDate: undefined,
             completed: false,
             pomodorosCompleted: 0,
@@ -46,12 +46,12 @@ describe('todoStore', () => {
     });
 
     it('should add a todo with a due date', () => {
-        const todos = addTodo('Test Todo with Due Date', true, '2025-12-31');
+        const todos = addTodo('Test Todo with Due Date', false, '2025-12-31');
         expect(todos.length).toBe(1);
         expect(todos[0]).toEqual({
             id: '1678886400000',
             text: 'Test Todo with Due Date',
-            priority: true,
+            isPriority: false,
             dueDate: '2025-12-31',
             completed: false,
             pomodorosCompleted: 0,
@@ -96,7 +96,7 @@ describe('todoStore', () => {
         vi.spyOn(Date, 'now').mockReturnValue(1678886400001); // Next ID
         addTodo('Todo 2', false);
         vi.spyOn(Date, 'now').mockReturnValue(1678886400002); // Next ID
-        addTodo('Todo 3', true);
+        addTodo('Todo 3', false);
 
         const initialTodos = getTodos();
         expect(initialTodos.map(todo => todo.text)).toEqual(['Todo 1', 'Todo 2', 'Todo 3']);

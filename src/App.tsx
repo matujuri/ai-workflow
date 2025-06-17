@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import TodoList from './components/TodoList';
-import TodoForm from './components/TodoForm';
+import TodoAddForm from './components/TodoAddForm';
 import { addTodo, getTodos, toggleTodoCompleted, deleteTodo, updateTodo, reorderTodos, incrementPomodorosCompleted } from './stores/todoStore';
 import type { Todo } from './types/todo';
 import usePomodoroTimer from './hooks/usePomodoroTimer';
-import { formatDateWithDay } from './utils/dateUtils';
+import { savePomodoroSetting, WORK_TIME_KEY, BREAK_TIME_KEY } from './stores/pomodoroSettingsStore';
 
 /**
  * @brief メインアプリケーションコンポーネント
@@ -20,15 +20,53 @@ function App() {
   // フォームの表示状態を管理するstate
   const [showTodoForm, setShowTodoForm] = useState(false);
 
+  // アプリケーションヘッダーに表示する日付と曜日を管理するstate
+  const [currentDate, setCurrentDate] = useState('');
+  const [currentDay, setCurrentDay] = useState('');
+
+  // 設定UIの表示状態を管理するstate
+  const [showSettings, setShowSettings] = useState(false);
+  // 作業時間と休憩時間の入力値を管理するstate
+  const [inputWorkTime, setInputWorkTime] = useState(0);
+  const [inputBreakTime, setInputBreakTime] = useState(0);
+
   // カスタムフックからポモドーロタイマーの状態と操作関数を取得
-  const { time, isRunning, isWorking, startTimer, pauseTimer, resetTimer, WORK_TIME, isBreakTimerActive, breakTimeRemaining, isWorkTimeCompleted, startBreak } = usePomodoroTimer();
+  const { time, isRunning, isWorking, startTimer, pauseTimer, resumeTimer, stopTimer, toggleMode, workTimeSetting, breakTimeSetting, initialPomodoroTime, isTimerActive } = usePomodoroTimer();
 
   /**
    * @brief コンポーネントのマウント時にTODOをLocal Storageから読み込む副作用
+   *        および現在の日付と曜日を設定する副作用
    */
   useEffect(() => {
     setTodos(getTodos());
+
+    const date = new Date();
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    setCurrentDate(date.toLocaleDateString('ja-JP', options));
+    const dayOptions: Intl.DateTimeFormatOptions = { weekday: 'long' };
+    setCurrentDay(date.toLocaleDateString('ja-JP', dayOptions));
   }, []); // 空の依存配列により、コンポーネントマウント時に一度だけ実行
+
+  // workTimeSettingとbreakTimeSettingが更新されたときにinputStateを更新
+  useEffect(() => {
+    setInputWorkTime(workTimeSetting / 60);
+    setInputBreakTime(breakTimeSetting / 60);
+  }, [workTimeSetting, breakTimeSetting]);
+
+  /**
+   * @brief タイマー設定をLocal Storageに保存するハンドラ
+   * @param なし
+   * @returns なし
+   */
+  const handleSaveSettings = () => {
+    if (inputWorkTime < 1 || inputBreakTime < 1) {
+      alert('作業時間と休憩時間は1分以上に設定してください。');
+      return;
+    }
+    savePomodoroSetting(WORK_TIME_KEY, inputWorkTime);
+    savePomodoroSetting(BREAK_TIME_KEY, inputBreakTime);
+    setShowSettings(false);
+  };
 
   /**
    * @brief TODO追加フォームの表示/非表示を切り替えるハンドラ
@@ -45,13 +83,10 @@ function App() {
   /**
    * @brief 新しいTODOアイテムを追加するハンドラ
    * @param text - TODOのテキスト内容
-   * @param priority - TODOの優先度
-   * @param dueDate - TODOの期限日（オプション）
    * @returns なし
    */
-  const handleAddTodo = (text: string, priority: boolean, dueDate?: string) => {
-    setTodos(addTodo(text, priority, dueDate));
-    setShowTodoForm(false); // TODO追加後にフォームを非表示にする
+  const handleAddTodo = (text: string) => {
+    setTodos(addTodo(text, false, undefined));
   };
 
   /**
@@ -76,12 +111,12 @@ function App() {
    * @brief TODOを更新するハンドラ
    * @param id - 更新するTODOのID
    * @param text - 新しいTODOのテキスト内容
-   * @param priority - 新しいTODOの優先度
+   * @param isPriority - 新しいTODOの優先度
    * @param dueDate - 新しいTODOの期限日（オプション）
    * @returns なし
    */
-  const handleUpdateTodo = (id: string, text: string, priority: boolean, dueDate?: string) => {
-    setTodos(updateTodo(id, { text, priority, dueDate }));
+  const handleUpdateTodo = (id: string, text: string, isPriority: boolean, dueDate?: string) => {
+    setTodos(updateTodo(id, { text, isPriority, dueDate }));
     setEditingTodo(null);
   };
 
@@ -119,60 +154,30 @@ function App() {
    * @param id - アクティブにするTODOのID
    * @returns なし
    */
-  const handleSetAsActiveTodo = (id: string) => {
-    const clickedTodo = todos.find(todo => todo.id === id);
-    // 完了済みのTODOがクリックされた場合はタイマーを起動しない
-    if (clickedTodo && clickedTodo.completed) {
+  const handleTodoItemClick = (id: string) => {
+    // アクティブなTODOが既に存在する場合、何もしない
+    if (activeTodoId !== null) {
       return;
     }
 
-    // クリックされたTODOが現在アクティブなTODOの場合
-    if (activeTodoId === id) {
-      // If work time is completed for the active todo, clicking should increment x and start break
-      if (isWorkTimeCompleted) {
-        setTodos(incrementPomodorosCompleted(id)); // pomodorosCompletedをインクリメントし、localStorageに保存
-        setActiveTodoId(null);
-        startBreak(); // 休憩タイマーを開始
-        return; // Exit after handling this specific case
-      }
+    // アクティブなTODOがない場合のみ、クリックされたTODOを作業タイマーの対象として開始
+    setActiveTodoId(id); // 新しいTODOをアクティブに設定
+    stopTimer(); // タイマーを作業時間にリセットし、作業モードに設定
+    startTimer(); // 新しいアクティブTODOの作業タイマーを開始
+  };
 
-      // タイマーが0の場合（作業時間または休憩時間が終了した場合）
-      if (time === 0) {
-        // 現在が作業時間の場合（作業時間が終了したばかり） - このブロックはisWorkTimeCompletedで既に処理されるため、実質的に到達しない
-        if (!isWorking && time === 0) {
-          // 休憩時間が終了した場合（または休憩タイマーが手動で停止/スキップされた場合）
-          // もう一度クリックすると、このTODOの作業タイマーが再開するはず。
-          // resetTimer()はisWorkingをtrueに設定し、timeをWORK_TIMEに設定し、isBreakTimerActiveをfalseに設定し、isWorkTimeCompletedをfalseに設定する。
-          // なので、タイマーを開始するだけ。
-          resetTimer();
-          startTimer();
-        } else {
-          // タイマーが0になったが、作業完了によるものではない場合（例：手動でリセットされた場合）
-          resetTimer();
-          startTimer();
-        }
-      } else {
-        // タイマーが実行中または一時停止中の場合、クリックで一時停止/再開を切り替える
-        if (isRunning) {
-          pauseTimer(); // 一時停止
-        } else {
-          startTimer(); // 再開
-        }
-      }
-    } else {
-      // クリックされたTODOが現在アクティブでない場合（別のTODOがクリックされたか、アクティブなTODOがない場合）
-      // 休憩タイマーがアクティブな場合、停止してリセットする。
-      if (isBreakTimerActive) {
-        resetTimer(); // これによりisWorkTimeCompletedもfalseになり、isWorkingがtrueになり、timeがWORK_TIMEになる
-      }
-      // 以前のTODOの作業時間が完了している場合、その状態をリセットする。
-      if (isWorkTimeCompleted) {
-        resetTimer(); // ユーザーが作業時間完了後に別のTODOをクリックした場合をカバーする
-      }
-
-      setActiveTodoId(id); // 新しいTODOをアクティブに設定
-      resetTimer(); // 新しいアクティブTODOの作業時間にリセット
-      startTimer(); // 新しいアクティブTODOの作業タイマーを開始
+  /**
+   * @brief 完了した作業タイマーの進捗円クリックで休憩タイマーを開始するハンドラ
+   * @param id - 進捗円がクリックされたTODOのID
+   * @returns なし
+   */
+  const handleProgressCircleClick = (id: string) => {
+    // アクティブなTODOの作業タイマーが完了しており、かつまだ実行中でない場合のみ休憩タイマーを開始
+    if (activeTodoId === id && time === 0 && !isRunning && isWorking) {
+      setTodos(incrementPomodorosCompleted(id)); // ポモドーロ完了回数を増やす
+      setActiveTodoId(null); // 休憩タイマーはTODOと紐づかないため、アクティブTODOを解除
+      toggleMode(); // 休憩モードに切り替え
+      startTimer(); // 休憩タイマーを開始
     }
   };
 
@@ -184,25 +189,94 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-      <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0 w-full max-w-4xl h-full">
-        {/* TODOリストセクション */}
-        <div
-          className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg flex flex-col h-full overflow-y-auto"
-          onClick={(e) => {
-            // クリックイベントがこのdiv自体で発生した場合のみフォームをトグル
-            if (e.target === e.currentTarget) {
-              toggleTodoFormVisibility();
-            }
-          }}
+    <div className="h-screen bg-gray-100 flex flex-col items-stretch py-4 relative pb-20">
+      {/* 休憩タイマーの残り時間表示 */}
+      {isTimerActive ? (
+        <div className={`fixed top-0 left-0 w-full text-white text-center py-2 text-lg font-bold z-50 flex justify-center items-center ${isWorking ? 'bg-red-500' : 'bg-blue-500'}`}>
+          <span>{isWorking ? '作業中' : '休憩中'}: {`${Math.floor(time / 60).toString().padStart(2, '0')}:${(time % 60).toString().padStart(2, '0')}`}</span>
+          <button
+            onClick={isRunning ? pauseTimer : resumeTimer}
+            className="ml-4 px-3 py-1 bg-white bg-opacity-20 rounded-md hover:bg-opacity-30 text-gray-800 text-sm"
+          >
+            {isRunning ? '一時停止' : '再開'}
+          </button>
+          <button
+            onClick={() => {
+              stopTimer();
+              setActiveTodoId(null); // タイマー停止時にアクティブTODOを解除
+            }}
+            className="ml-2 px-3 py-1 bg-white bg-opacity-20 rounded-md hover:bg-opacity-30 text-gray-800 text-sm"
+          >
+            停止
+          </button>
+        </div>
+      ) : null}
+
+      {/* 設定ボタン */}
+      <div className="absolute top-4 right-4 z-50">
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full shadow-lg"
         >
-          <h1 className="text-3xl font-bold mb-4 text-center text-gray-800">{formatDateWithDay()}</h1>
-          {/* 休憩タイマーの残り時間表示 */}
-          {isBreakTimerActive && (
-            <p className="text-lg font-medium text-center text-blue-600 mb-2">
-              休憩残り時間: {formatTime(breakTimeRemaining)}
-            </p>
-          )}
+          設定
+        </button>
+      </div>
+
+      {/* 設定UI */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-80">
+            <h2 className="text-xl font-bold mb-4 text-center">タイマー設定</h2>
+            <div className="mb-4">
+              <label htmlFor="work-time" className="block text-gray-700 text-sm font-bold mb-2">
+                作業時間 (分):
+              </label>
+              <input
+                type="number"
+                id="work-time"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                value={inputWorkTime}
+                onChange={(e) => setInputWorkTime(parseInt(e.target.value, 10))}
+                min="1"
+              />
+            </div>
+            <div className="mb-6">
+              <label htmlFor="break-time" className="block text-gray-700 text-sm font-bold mb-2">
+                休憩時間 (分):
+              </label>
+              <input
+                type="number"
+                id="break-time"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                value={inputBreakTime}
+                onChange={(e) => setInputBreakTime(parseInt(e.target.value, 10))}
+                min="1"
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mr-2"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleSaveSettings}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              >
+                設定を保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0 w-full flex-grow">
+        <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg flex flex-col flex-grow">
+          <div className="text-center mb-4">
+            <p className="text-lg font-semibold text-gray-800">{currentDate}</p>
+            <p className="text-sm text-gray-600">{currentDay}</p>
+          </div>
           {/* TODOリスト */}
           <TodoList
             todos={todos}
@@ -211,26 +285,19 @@ function App() {
             onStartEdit={handleStartEdit}
             onSort={handleSort}
             activeTodoId={activeTodoId}
-            onSetAsActiveTodo={handleSetAsActiveTodo}
+            onSetAsActiveTodo={handleTodoItemClick}
             time={time}
-            WORK_TIME={WORK_TIME}
-            isWorking={isWorking}
-            isWorkTimeCompleted={isWorkTimeCompleted}
-            editingTodo={editingTodo}
+            initialWorkTimeTotal={initialPomodoroTime}
+            onProgressCircleClick={handleProgressCircleClick}
+            className="mt-4"
             onEditTodo={handleUpdateTodo}
             onCancelEdit={handleCancelEdit}
+            editingTodo={editingTodo}
           />
-          {/* TODOフォーム (新規追加用) */}
-          {showTodoForm && !editingTodo && (
-            <TodoForm
-              onAddTodo={handleAddTodo}
-              onEditTodo={handleUpdateTodo}
-              editingTodo={null}
-              onCancelEdit={handleCancelEdit}
-            />
-          )}
         </div>
       </div>
+      {/* TODO追加フォーム - 常に表示 */}
+      {<TodoAddForm onAddTodo={handleAddTodo} />}
     </div>
   );
 }

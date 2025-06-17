@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { getPomodoroSetting, WORK_TIME_KEY, BREAK_TIME_KEY, DEFAULT_WORK_TIME, DEFAULT_BREAK_TIME } from '../stores/pomodoroSettingsStore';
 
 /**
  * @interface UsePomodoroTimerReturn
@@ -8,14 +9,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
  * @param isWorking - 現在が作業時間であるか（true）休憩時間であるか（false）を示すフラグ
  * @param startTimer - タイマーを開始する関数
  * @param pauseTimer - タイマーを一時停止する関数
- * @param resetTimer - タイマーをリセットする関数
+ * @param resumeTimer - 一時停止中のタイマーを再開する関数
+ * @param stopTimer - タイマーを停止する関数
  * @param toggleMode - 作業時間と休憩時間を切り替える関数
- * @param WORK_TIME - 定義された作業時間（秒）
- * @param BREAK_TIME - 定義された休憩時間（秒）
- * @param isBreakTimerActive - 現在が休憩タイマー中であるかを示すフラグ
- * @param breakTimeRemaining - 休憩タイマーの残り時間（秒単位）
- * @param isWorkTimeCompleted - 作業時間が完了したかどうかを示すフラグ
- * @param startBreak - 作業時間が完了した後に休憩タイマーを開始する関数
+ * @param workTimeSetting - 設定された作業時間（秒）
+ * @param breakTimeSetting - 設定された休憩時間（秒）
+ * @param initialPomodoroTime - ポモドーロ開始時点の総時間（秒）
+ * @param isTimerActive - タイマーが現在アクティブな状態であるかを示すフラグ
  */
 interface UsePomodoroTimerReturn {
     time: number; // 秒単位の残り時間
@@ -23,189 +23,160 @@ interface UsePomodoroTimerReturn {
     isWorking: boolean; // 現在が作業時間か
     startTimer: () => void; // タイマーを開始する関数
     pauseTimer: () => void; // タイマーを一時停止する関数
-    resetTimer: () => void; // タイマーをリセットする関数
+    resumeTimer: () => void; // 一時停止中のタイマーを再開する関数
+    stopTimer: () => void; // タイマーを停止する関数
     toggleMode: () => void; // 作業時間と休憩時間を切り替える関数
-    WORK_TIME: number; // 作業時間（秒）
-    BREAK_TIME: number; // 休憩時間（秒）
-    isBreakTimerActive: boolean; // 休憩タイマーがアクティブか
-    breakTimeRemaining: number; // 休憩タイマーの残り時間
-    isWorkTimeCompleted: boolean; // 作業時間が完了したかどうかを示すフラグ
-    startBreak: () => void; // 作業時間が完了した後に休憩タイマーを開始する関数
+    workTimeSetting: number; // 設定された作業時間（秒）
+    breakTimeSetting: number; // 設定された休憩時間（秒）
+    initialPomodoroTime: number; // ポモドーロ開始時点の総時間（秒）
+    isTimerActive: boolean; // タイマーがアクティブな状態か
 }
-
-// ポモドーロ作業時間（25分を秒に変換）
-const WORK_TIME = 5;
-// ポモドーロ休憩時間（5分を秒に変換）
-const BREAK_TIME = 3;
 
 /**
  * @brief ポモドーロタイマーのロジックを提供するカスタムReactフック
  * @returns UsePomodoroTimerReturn - タイマーの状態と操作関数
  */
 const usePomodoroTimer = (): UsePomodoroTimerReturn => {
+    // 初期設定時間をLocal Storageから取得 (これはService Workerに初期値を設定するために残す)
+    const initialWorkTime = getPomodoroSetting(WORK_TIME_KEY, DEFAULT_WORK_TIME);
+    const initialBreakTime = getPomodoroSetting(BREAK_TIME_KEY, DEFAULT_BREAK_TIME);
+
     // タイマーの残り時間状態
-    const [time, setTime] = useState(WORK_TIME);
+    const [time, setTime] = useState(initialWorkTime);
     // タイマーが実行中かどうかの状態
     const [isRunning, setIsRunning] = useState(false);
     // 現在が作業時間か休憩時間かの状態（true: 作業時間, false: 休憩時間）
     const [isWorking, setIsWorking] = useState(true);
-    // 休憩タイマーがアクティブかどうかの状態
-    const [isBreakTimerActive, setIsBreakTimerActive] = useState(false);
-    // 休憩タイマーの残り時間状態
-    const [breakTimeRemaining, setBreakTimeRemaining] = useState(BREAK_TIME);
-    // 作業時間が完了したかどうかの状態
-    const [isWorkTimeCompleted, setIsWorkTimeCompleted] = useState(false);
-    // setIntervalのIDを保持するためのref
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    // ポモドーロ開始時点の総時間
+    const [initialPomodoroTime, setInitialPomodoroTime] = useState(initialWorkTime);
 
-    // isWorkingの状態が変更されたときに、タイマーの残り時間を初期化する
-    // ただし、isWorkTimeCompletedがtrueの場合はtimeを0に保つ
-    useEffect(() => {
-        if (!isWorkTimeCompleted) { // 作業完了状態でない場合のみ、モードに応じて時間を設定
-            setTime(isWorking ? WORK_TIME : BREAK_TIME);
-        } else {
-            setTime(0); // 作業完了状態なら時間を0に固定
+    // 設定時間をstateとして保持し、UIに公開する
+    const [workTimeSetting, setWorkTimeSetting] = useState(initialWorkTime);
+    const [breakTimeSetting, setBreakTimeSetting] = useState(initialBreakTime);
+    // タイマーがアクティブな状態か
+    const [isTimerActive, setIsTimerActive] = useState(false);
+
+    // Service Workerへのメッセージ送信ヘルパー関数
+    const postMessageToServiceWorker = useCallback(async (type: string, payload?: any) => {
+        if (!navigator.serviceWorker) {
+            console.warn('Service Worker not supported.');
+            return;
         }
-    }, [isWorking, isWorkTimeCompleted, WORK_TIME, BREAK_TIME]); // 依存配列にWORK_TIMEとBREAK_TIMEを追加
-
-    // 休憩タイマーのカウントダウンロジック
-    useEffect(() => {
-        let breakInterval: NodeJS.Timeout | null = null;
-        if (isBreakTimerActive && breakTimeRemaining > 0) {
-            breakInterval = setInterval(() => {
-                setBreakTimeRemaining(prev => prev - 1);
-            }, 1000);
-        } else if (isBreakTimerActive && breakTimeRemaining === 0) {
-            // 休憩時間が終了したら、タイマーをリセットし作業モードに戻す
-            setIsBreakTimerActive(false);
-            setIsWorking(true);
-            setTime(WORK_TIME);
-            setIsRunning(false); // 自動では開始しない
-            setBreakTimeRemaining(BREAK_TIME); // 次の休憩のためにリセット
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            if (registration.active) {
+                registration.active.postMessage({ type, payload });
+            } else {
+                console.warn('Service Worker active controller not available.');
+            }
+        } catch (error) {
+            console.error('Error sending message to Service Worker:', error);
         }
+    }, []);
 
-        return () => {
-            if (breakInterval) {
-                clearInterval(breakInterval);
+    // Local Storageの値が変更された際に設定を更新し、Service Workerにも通知するeffect
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const newWorkTime = getPomodoroSetting(WORK_TIME_KEY, DEFAULT_WORK_TIME);
+            const newBreakTime = getPomodoroSetting(BREAK_TIME_KEY, DEFAULT_BREAK_TIME);
+            setWorkTimeSetting(newWorkTime);
+            setBreakTimeSetting(newBreakTime);
+            // Service Workerに設定更新を通知
+            postMessageToServiceWorker('UPDATE_TIMER_SETTINGS', {
+                workTime: newWorkTime / 60, // 秒から分に戻して渡す
+                breakTime: newBreakTime / 60, // 秒から分に戻して渡す
+            });
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, [postMessageToServiceWorker]);
+
+    // Service Workerからのメッセージを受信し、状態を更新するeffect
+    useEffect(() => {
+        const handleMessage = (event: Event) => {
+            const messageEvent = event as MessageEvent;
+            if (messageEvent.data && messageEvent.data.type === 'TIMER_STATE_UPDATE') {
+                const { time, isRunning, isWorking, initialPomodoroTime, workTimeSetting, breakTimeSetting, isTimerActive } = messageEvent.data.payload;
+                setTime(time);
+                setIsRunning(isRunning);
+                setIsWorking(isWorking);
+                setInitialPomodoroTime(initialPomodoroTime);
+                setWorkTimeSetting(workTimeSetting);
+                setBreakTimeSetting(breakTimeSetting);
+                setIsTimerActive(isTimerActive);
             }
         };
-    }, [isBreakTimerActive, breakTimeRemaining]);
+        // Service Workerからのメッセージリスナーを登録
+        if (navigator.serviceWorker) {
+            navigator.serviceWorker.addEventListener('message', handleMessage);
+        }
+        return () => {
+            if (navigator.serviceWorker) {
+                navigator.serviceWorker.removeEventListener('message', handleMessage);
+            }
+        };
+    }, []);
+
+    // コンポーネントマウント時にService Workerにタイマー状態を要求
+    // また、Service Workerに初期設定を同期する
+    useEffect(() => {
+        // Service Workerがアクティブになるまで待機し、状態を要求
+        postMessageToServiceWorker('REQUEST_TIMER_STATE');
+        postMessageToServiceWorker('UPDATE_TIMER_SETTINGS', {
+            workTime: initialWorkTime / 60, // 秒から分に戻して渡す
+            breakTime: initialBreakTime / 60, // 秒から分に戻して渡す
+        });
+    }, [postMessageToServiceWorker, initialWorkTime, initialBreakTime]);
 
     /**
      * @brief タイマーを開始する関数
-     * タイマーが停止している場合のみ実行中状態にする。
+     * Service Workerにタイマー開始を指示する。
      * @param なし
      * @returns なし
      */
     const startTimer = useCallback(() => {
-        setIsRunning(true);
-    }, []);
+        postMessageToServiceWorker('START_TIMER');
+    }, [postMessageToServiceWorker]);
 
     /**
      * @brief タイマーを一時停止する関数
-     * タイマーが実行中の場合のみ停止状態にする。
+     * Service Workerにタイマー一時停止を指示する。
      * @param なし
      * @returns なし
      */
     const pauseTimer = useCallback(() => {
-        setIsRunning(false);
-    }, []);
+        postMessageToServiceWorker('PAUSE_TIMER');
+    }, [postMessageToServiceWorker]);
 
     /**
-     * @brief タイマーをリセットする関数
-     * タイマーを停止し、作業モードに戻し、残り時間を初期作業時間に戻す。
-     * 休憩タイマーもリセットする。
+     * @brief 一時停止中のタイマーを再開する関数
+     * Service Workerにタイマー再開を指示する。
      * @param なし
      * @returns なし
      */
-    const resetTimer = useCallback(() => {
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-        }
-        setIsRunning(false);
-        setIsWorking(true);
-        setTime(WORK_TIME);
-        setIsBreakTimerActive(false);
-        setBreakTimeRemaining(BREAK_TIME);
-        setIsWorkTimeCompleted(false);
-    }, []);
+    const resumeTimer = useCallback(() => {
+        postMessageToServiceWorker('RESUME_TIMER');
+    }, [postMessageToServiceWorker]);
+
+    /**
+     * @brief タイマーを停止する関数
+     * Service Workerにタイマー停止を指示する。
+     * @param なし
+     * @returns なし
+     */
+    const stopTimer = useCallback(() => {
+        postMessageToServiceWorker('STOP_TIMER');
+    }, [postMessageToServiceWorker]);
 
     /**
      * @brief 作業時間と休憩時間を切り替える関数
-     * 現在のタイマーを一時停止し、モードを切り替えて新しいモードの時間を設定する。
+     * Service Workerにモード切り替えを指示する。
      * @param なし
      * @returns なし
      */
     const toggleMode = useCallback(() => {
-        setIsRunning(false); // モード切り替え時はタイマーを一時停止
-        setIsWorking(prevIsWorking => {
-            const newIsWorking = !prevIsWorking;
-            // 休憩タイマー終了後、isWorkTimeCompletedをfalseにする
-            if (!newIsWorking) { // 作業モードから休憩モードへ
-                setIsWorkTimeCompleted(false);
-            }
-            setTime(newIsWorking ? WORK_TIME : BREAK_TIME);
-            return newIsWorking;
-        });
-    }, [WORK_TIME, BREAK_TIME]);
-
-    /**
-     * @brief 作業時間が完了した後に休憩タイマーを開始する関数
-     * @param なし
-     * @returns なし
-     */
-    const startBreak = useCallback(() => {
-        setIsWorking(false);
-        setIsRunning(true);
-        setIsBreakTimerActive(true);
-        setBreakTimeRemaining(BREAK_TIME);
-    }, []);
-
-    // タイマーのカウントダウンロジックと通知処理
-    useEffect(() => {
-        if (isRunning && time > 0) {
-            intervalRef.current = setInterval(() => {
-                setTime(prevTime => prevTime - 1);
-            }, 1000);
-        } else if (isRunning && time === 0) {
-            setIsRunning(false);
-
-            // 音声通知
-            const audio = new Audio('/sounds/bell.mp3');
-            audio.play();
-
-            if (isWorking) {
-                // 作業時間が終了した場合
-                setIsWorkTimeCompleted(true); // 作業完了状態を設定
-                setIsBreakTimerActive(true); // 休憩タイマーがアクティブであることを示す（App.tsxでの表示用）
-                setBreakTimeRemaining(BREAK_TIME); // 休憩時間をリセット（表示用）
-                setTime(0); // 作業時間が終了したらtimeを0に固定
-                // ここではisWorkingを切り替えない。ユーザーのクリックを待つ。
-            } else {
-                // 休憩時間が終了した場合
-                setIsWorkTimeCompleted(false);
-                setIsBreakTimerActive(false);
-                setIsWorking(true); // 作業モードに戻す
-                setTime(WORK_TIME); // 作業時間をリセット
-            }
-        }
-
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        };
-    }, [time, isRunning, isWorking, resetTimer, startBreak, setIsBreakTimerActive, setIsWorkTimeCompleted, setBreakTimeRemaining]);
-
-    // コンポーネントがアンマウントされたときに最終的なクリーンアップを行う
-    useEffect(() => {
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        };
-    }, []);
+        postMessageToServiceWorker('TOGGLE_MODE');
+    }, [postMessageToServiceWorker]);
 
     // フックの戻り値
     return {
@@ -214,14 +185,13 @@ const usePomodoroTimer = (): UsePomodoroTimerReturn => {
         isWorking,
         startTimer,
         pauseTimer,
-        resetTimer,
+        resumeTimer,
+        stopTimer,
         toggleMode,
-        WORK_TIME,
-        BREAK_TIME,
-        isBreakTimerActive,
-        breakTimeRemaining,
-        isWorkTimeCompleted,
-        startBreak,
+        workTimeSetting,
+        breakTimeSetting,
+        initialPomodoroTime,
+        isTimerActive,
     };
 };
 

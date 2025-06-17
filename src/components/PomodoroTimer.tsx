@@ -1,5 +1,4 @@
 import React from 'react';
-// import usePomodoroTimer from '../hooks/usePomodoroTimer'; // usePomodoroTimerを削除
 import { formatTime } from '../utils/timer';
 
 /**
@@ -10,7 +9,7 @@ import { formatTime } from '../utils/timer';
  * @param isWorking - 現在が作業時間か
  * @param startTimer - タイマーを開始する関数
  * @param pauseTimer - タイマーを一時停止する関数
- * @param resetTimer - タイマーをリセットする関数
+ * @param stopTimer - タイマーを停止する関数
  * @param toggleMode - 作業時間と休憩時間を切り替える関数
  * @param onResetClick - リセットボタンがクリックされた時のコールバック関数
  */
@@ -28,8 +27,7 @@ interface PomodoroTimerProps {
  * @brief ポモドーロタイマーのUIを表示するコンポーネント
  * @param props - PomodoroTimerPropsで定義されたプロパティ
  */
-const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ time, isRunning, isWorking, startTimer, pauseTimer, /* resetTimer, */ toggleMode, onResetClick }) => {
-    // const { time, isRunning, isWorking, startTimer, pauseTimer, resetTimer, toggleMode } = usePomodoroTimer(); // 削除
+const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ time, isRunning, isWorking, startTimer, pauseTimer, toggleMode, onResetClick }) => {
 
     return (
         <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg shadow-md">
